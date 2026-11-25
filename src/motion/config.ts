@@ -180,3 +180,8 @@ export const NOVELTY_INTERVAL_S: Range = { min: 20, max: 30 };
 export const FIRST_WIN_WITHIN_S = 10;
 /** All games preload; opening any game takes less than this. */
 export const GAME_OPEN_MAX_S = 1;
+
+// --- Dev tools ---------------------------------------------------------------
+
+/** Pose recorder auto-stops here (covers the 10-min clip with margin). */
+export const RECORDER_MAX_S = 660;

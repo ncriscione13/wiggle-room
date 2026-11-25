@@ -2,6 +2,23 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-25 — M0.5 — Pose recorder + drag-and-drop
+
+- **"Dev only" = dev build OR `?debug=1`**: Nick runs the built app (preview/Pages) on
+  the TV, so a URL flag is the practical dev gate there. Without either, neither R nor
+  drop exists.
+- **A recording is only `{version,name,kind,nominalFps,frames:[{tS,poses}]}`** — a test
+  pins the exact key set so nothing video-like can ever sneak into saved files.
+- **nominalFps is estimated from the median frame interval** (timestamps remain the
+  truth); recordings auto-stop at `RECORDER_MAX_S` (11 min).
+- **Dropping a clip swaps the running session in-place** (destroy stage/overlay/source,
+  start a replay session): clips are far too big for sessionStorage hand-offs, and a
+  dropped file can't be a URL. The app got a small StageSession structure for this.
+- **The e2e downloads the real file** via Playwright's download event and runs
+  `validateClipFile` on it — the save path is proven end to end.
+- Test-fixture lesson #2 today: the "60 fps" fixture carried hardcoded 30 fps intervals;
+  the fixture was wrong, not the estimator.
+
 ## 2026-11-25 — M0.4 — Debug overlay
 
 - **Skeletons and floor circles stay on the Phaser stage** (always-on skeletons are the
