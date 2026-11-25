@@ -190,3 +190,5 @@ export const GAME_OPEN_MAX_S = 1;
 
 /** Pose recorder auto-stops here (covers the 10-min clip with margin). */
 export const RECORDER_MAX_S = 660;
+/** Clip-recording mode: get-ready countdown before each take. */
+export const RECORD_COUNTDOWN_S = 3;

@@ -2,6 +2,25 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-25 — M0.8 — Clip-recording mode
+
+- **Real-clip names deliberately differ from synthetic names** (`bunny-hops-x5` vs
+  `jumps-x5`, `kid-squats-x3` vs `squats-x3`, `kid-walks-out-and-back` vs
+  `walk-out-and-back`, `dim-room-30s` vs `low-visibility-30s`): `loadClip()` prefers real
+  files by name, so same names would silently swap the inputs under tests that pin exact
+  synthetic counts. A test enforces the no-collision rule. M1 wires real clips into
+  detector tests explicitly, with their own expected counts.
+- **Recordings download to the browser's Downloads folder**; Nick copies them into
+  `test/clips/real/` (the page can't write into the repo). The done screen says so.
+- **`?promptSeconds=N` scales take lengths** (2–600 s) for dry runs and e2e; the
+  countdown stays real. The flow state machine is a pure reducer, fully unit-tested;
+  the e2e asserts stable outcomes (download fired, review reached, next prompt) rather
+  than racing the transient countdown/recording phases under suite CPU load.
+- **Playwright's global per-test timeout raised to 120 s**: the suite legitimately runs
+  several MediaPipe-wasm browsers in parallel now, and the 30 s default was timing out
+  healthy tests, not catching bugs.
+- The stage runs behind the director panel so kids see their skeletons while framing.
+
 ## 2026-11-25 — M0.7 — Lag test screen
 
 - **DOM, not Phaser**: a single translated div + rAF is the lowest-overhead way to draw

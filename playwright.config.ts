@@ -8,6 +8,9 @@ const PORT = '4173';
 export default defineConfig({
   testDir: 'e2e',
   globalSetup: './e2e/global-setup.ts',
+  // The suite runs several MediaPipe-wasm browsers in parallel; under that CPU
+  // contention the default 30 s per-test budget is too tight.
+  timeout: 120_000,
   fullyParallel: true,
   forbidOnly: !!process.env['CI'],
   retries: process.env['CI'] ? 1 : 0,

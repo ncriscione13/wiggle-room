@@ -8,12 +8,13 @@ export type SourceConfig = { source: 'camera' } | { source: 'replay'; clip: stri
 /** Clip names are simple slugs; anything else falls back to the camera. */
 const CLIP_NAME = /^[a-z0-9][a-z0-9-]*$/;
 
-export type ScreenName = 'stage' | 'lagtest';
+export type ScreenName = 'stage' | 'lagtest' | 'record';
 
 /** Which screen to show (M0.7+): the normal stage, or a dev/measurement one. */
 export function screenFromUrl(search: string): ScreenName {
   const screen = new URLSearchParams(search).get('screen');
-  return screen === 'lagtest' ? 'lagtest' : 'stage';
+  if (screen === 'lagtest' || screen === 'record') return screen;
+  return 'stage';
 }
 
 export function sourceConfigFromUrl(search: string): SourceConfig {

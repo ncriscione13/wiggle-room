@@ -18,6 +18,7 @@ import { LivePoseSource } from '../tracking/live-pose-source';
 import { ReplayPoseSource } from '../tracking/replay-pose-source';
 import { screenFromUrl, sourceConfigFromUrl, type SourceConfig } from '../tracking/source-config';
 import { mountLagTestScreen } from '../debug/lag-test';
+import { mountClipRecordingDirector } from '../debug/clip-recording';
 import type { ClipFile } from '../tracking/clip-format';
 import type { PoseSource } from '../tracking/pose-source';
 import { mountPoseStage, type PoseStage } from '../ui/pose-stage';
@@ -119,12 +120,44 @@ async function bootLagTest(root: HTMLElement, config: SourceConfig): Promise<voi
   }
 }
 
+/** M0.8: guided recording of the real-kid clips, with the stage behind for
+ * framing feedback. Live camera only; no device check in the way. */
+async function bootRecord(root: HTMLElement): Promise<void> {
+  try {
+    const camera = await openCamera();
+    const handle = await createPoseLandmarker();
+    const live = new LivePoseSource({ video: camera.video, landmarker: handle.landmarker });
+    live.onError(() => {
+      renderCameraErrorScreen(root, 'unknown');
+    });
+    startStageSession(root, live, 'recording mode', () => {
+      camera.stop();
+    });
+    await live.start();
+    const raw = new URLSearchParams(window.location.search).get('promptSeconds');
+    const override = raw === null ? NaN : Number(raw);
+    mountClipRecordingDirector(
+      root,
+      live,
+      Number.isFinite(override) ? { promptSecondsOverride: override } : {},
+    );
+  } catch (error) {
+    const kind = error instanceof CameraOpenError ? error.kind : 'unknown';
+    renderCameraErrorScreen(root, kind);
+  }
+}
+
 export async function bootApp(root: HTMLElement): Promise<void> {
   renderStartScreen(root);
   const config = sourceConfigFromUrl(window.location.search);
+  const screen = screenFromUrl(window.location.search);
 
-  if (screenFromUrl(window.location.search) === 'lagtest') {
+  if (screen === 'lagtest') {
     await bootLagTest(root, config);
+    return;
+  }
+  if (screen === 'record') {
+    await bootRecord(root);
     return;
   }
 

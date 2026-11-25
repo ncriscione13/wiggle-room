@@ -61,6 +61,10 @@ describe('screenFromUrl (M0.7)', () => {
     expect(screenFromUrl('?clip=jumps-x5&screen=lagtest')).toBe('lagtest');
   });
 
+  it('parses the clip recording screen (M0.8)', () => {
+    expect(screenFromUrl('?screen=record')).toBe('record');
+  });
+
   it('falls back to the stage on unknown screens', () => {
     expect(screenFromUrl('?screen=zzz')).toBe('stage');
   });
