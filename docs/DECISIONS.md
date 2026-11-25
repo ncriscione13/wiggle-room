@@ -2,6 +2,28 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-25 — 0.3 — Guardrail lint rules
+
+- **Guardrails live in `eslint.guardrails.js`**, imported by both `eslint.config.js` and
+  `test/lint-guardrails.test.ts`, so the shipped rules and the tested rules can't drift.
+- **Added beyond PLAN's list**: `@mediapipe/**` imports are restricted to `src/tracking/`
+  (that's the teeth of CLAUDE.md rule 1, which says to enforce the layering with
+  no-restricted-imports); `EventSource` and `navigator.sendBeacon` join the network ban
+  (same category as fetch/XHR/WebSocket).
+- **Color rule mechanics**: string literals and template strings containing `#hex` /
+  `rgb()` / `hsl()`, plus exactly-6-digit `0x` numeric literals (Phaser tints). Short hex
+  masks like `0xff` stay legal. Known accepted false-positive class: a DOM id selector that
+  happens to be 3-8 hex chars (e.g. '#beef') would be flagged — rename or justify with a
+  disable comment.
+- **Two scoping exemptions**: `src/ui/theme.ts` (colors live there) and
+  `test/lint-guardrails.test.ts` (holds forbidden color fixtures as strings; the rule
+  still applies to all other test files). `tools/` is exempt from the speech and network
+  bans (dev-time code; `fetch-models` downloads the model by design); `src/assets/loader.ts`
+  is the single fetch exception per PLAN 0.3.
+- **One documented cast** in the guardrail test: typescript-eslint's parser/plugin types
+  aren't assignable to eslint core's `Linter.Config` (runtime-compatible; known ecosystem
+  gap) — bridged with `as unknown as`, no `any`.
+
 ## 2026-11-25 — 0.2 — Scripts, placeholders, @eslint/js
 
 - **`bench` and `voice` are honest placeholders**: they print which task delivers them

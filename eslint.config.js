@@ -1,8 +1,9 @@
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
+import { guardrailConfigs } from './eslint.guardrails.js';
 
-// Base lint setup (task 0.2). The project guardrail rules (layering, colors,
-// no speechSynthesis, no network, no any) are added in task 0.3.
+// Base lint setup (task 0.2) + project guardrails (task 0.3, see
+// eslint.guardrails.js; proven by test/lint-guardrails.test.ts).
 export default tseslint.config(
   {
     ignores: [
@@ -30,4 +31,5 @@ export default tseslint.config(
     files: ['**/*.{js,mjs,cjs}'],
     extends: [eslint.configs.recommended],
   },
+  ...guardrailConfigs,
 );
