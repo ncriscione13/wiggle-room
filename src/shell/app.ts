@@ -16,7 +16,8 @@ import {
 import { createPoseLandmarker } from '../tracking/landmarker';
 import { LivePoseSource } from '../tracking/live-pose-source';
 import { ReplayPoseSource } from '../tracking/replay-pose-source';
-import { sourceConfigFromUrl } from '../tracking/source-config';
+import { screenFromUrl, sourceConfigFromUrl, type SourceConfig } from '../tracking/source-config';
+import { mountLagTestScreen } from '../debug/lag-test';
 import type { ClipFile } from '../tracking/clip-format';
 import type { PoseSource } from '../tracking/pose-source';
 import { mountPoseStage, type PoseStage } from '../ui/pose-stage';
@@ -93,9 +94,39 @@ function playDroppedClip(root: HTMLElement, clip: ClipFile): void {
   void replay.start();
 }
 
+/** M0.7: the lag test replaces the stage; no device check, no overlay. */
+async function bootLagTest(root: HTMLElement, config: SourceConfig): Promise<void> {
+  if (config.source === 'replay') {
+    const clip = await mountReplayBadge(root, config.clip);
+    if (clip === null) return;
+    const replay = new ReplayPoseSource(clip, { speed: config.speed, loop: true });
+    await replay.start();
+    mountLagTestScreen(root, replay);
+    return;
+  }
+  try {
+    const camera = await openCamera();
+    const handle = await createPoseLandmarker();
+    const live = new LivePoseSource({ video: camera.video, landmarker: handle.landmarker });
+    live.onError(() => {
+      renderCameraErrorScreen(root, 'unknown');
+    });
+    await live.start();
+    mountLagTestScreen(root, live);
+  } catch (error) {
+    const kind = error instanceof CameraOpenError ? error.kind : 'unknown';
+    renderCameraErrorScreen(root, kind);
+  }
+}
+
 export async function bootApp(root: HTMLElement): Promise<void> {
   renderStartScreen(root);
   const config = sourceConfigFromUrl(window.location.search);
+
+  if (screenFromUrl(window.location.search) === 'lagtest') {
+    await bootLagTest(root, config);
+    return;
+  }
 
   if (isRecorderEnabled(window.location.search, import.meta.env.DEV)) {
     mountDevTools(root, {

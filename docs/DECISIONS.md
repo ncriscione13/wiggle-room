@@ -2,6 +2,19 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-25 — M0.7 — Lag test screen
+
+- **DOM, not Phaser**: a single translated div + rAF is the lowest-overhead way to draw
+  one marker, and keeps the lag screen independent of the render stack it helps diagnose.
+- **The marker is `butter`, not white**: high contrast on the night surface without
+  breaking the no-pure-white comfort rule; the counter is tabular-numeral, fixed-width
+  (6 digits) so every 240 fps phone frame shows a steady, readable number.
+- **`?screen=lagtest` skips the device check and overlay** — the measurement should not
+  share the frame budget with anything else. Works over replay too (e2e uses the jumps
+  clip to prove the marker follows a moving wrist).
+- **~4.17 ms per 240 fps frame** in docs/LAG-TEST.md (PLAN said "~4 ms"); median of 4–5
+  flicks, not best/worst.
+
 ## 2026-11-25 — M0.6 — Device check
 
 - **Reduction ladder before warning**: full size → 480×360 → 320×240 (config constants),

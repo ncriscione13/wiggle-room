@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { sourceConfigFromUrl } from './source-config';
+import { screenFromUrl, sourceConfigFromUrl } from './source-config';
 
 // Task 0.7 + M0.2: `?source=replay&clip=<name>` feeds a clip instead of the
 // camera; `&speed=` scales playback (the M0.3 render stress mode).
@@ -47,5 +47,21 @@ describe('sourceConfigFromUrl', () => {
         source: 'camera',
       });
     }
+  });
+});
+
+describe('screenFromUrl (M0.7)', () => {
+  it('defaults to the stage', () => {
+    expect(screenFromUrl('')).toBe('stage');
+    expect(screenFromUrl('?clip=jumps-x5')).toBe('stage');
+  });
+
+  it('parses the lag test screen', () => {
+    expect(screenFromUrl('?screen=lagtest')).toBe('lagtest');
+    expect(screenFromUrl('?clip=jumps-x5&screen=lagtest')).toBe('lagtest');
+  });
+
+  it('falls back to the stage on unknown screens', () => {
+    expect(screenFromUrl('?screen=zzz')).toBe('stage');
   });
 });
