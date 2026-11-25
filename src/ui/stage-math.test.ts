@@ -16,8 +16,10 @@ describe('stage math (M0.3): mirrored display mapping', () => {
     expect(toStageY(lm(0, 0.5), 1080)).toBe(540);
   });
 
-  it('a step to the kid-s own left moves the drawn point the same screen direction', () => {
-    // Kid moves toward camera-x 0 (their left in the mirror); screen x grows.
+  it('mirror behavior: moving toward camera-x 0 moves the drawn point toward screen-right', () => {
+    // An (un-mirrored) camera sees the kid's RIGHT side at small x; flipping x
+    // puts it on screen-right -- exactly how a mirror behaves, so a step reads
+    // as "toward the same side" to the kid.
     const before = toStageX(lm(0.5, 0), 1920);
     const after = toStageX(lm(0.4, 0), 1920);
     expect(after).toBeGreaterThan(before);

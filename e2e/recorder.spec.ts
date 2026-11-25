@@ -60,4 +60,9 @@ test('dropping a clip JSON replays it on the stage', async ({ page }) => {
 
   await expect(page.getByTestId('replay-badge')).toContainText('dropped-mini', { timeout: 10000 });
   await expect(page.getByTestId('pose-stage').locator('canvas')).toBeVisible();
+
+  // Pin actual playback, not just the swap: the dropped session's overlay
+  // carries the "replay started (dropped clip)" event (review fix).
+  await page.keyboard.press('d');
+  await expect(page.getByTestId('overlay-events')).toContainText('replay started (dropped clip)');
 });

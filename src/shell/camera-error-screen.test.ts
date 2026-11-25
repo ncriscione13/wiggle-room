@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { CAMERA_ERROR_COPY } from './camera-error-screen';
-import type { CameraErrorKind } from '../tracking/camera';
+import { CAMERA_ERROR_COPY, type ProblemKind } from './camera-error-screen';
 
-// M0.1: friendly screens for camera problems. The copy is data, tested here;
-// the rendering is proven in e2e/camera.spec.ts.
+// M0.1: friendly screens for camera problems (+ 'model' for a tracking-engine
+// load failure, per the self-review checklist). The copy is data, tested
+// here; the rendering is proven in e2e/camera.spec.ts.
 
-const KINDS: CameraErrorKind[] = ['denied', 'not-found', 'busy', 'insecure', 'unknown'];
+const KINDS: ProblemKind[] = ['denied', 'not-found', 'busy', 'insecure', 'unknown', 'model'];
 
 describe('camera error copy (M0.1)', () => {
   it('covers every error kind with a title and a fix hint', () => {

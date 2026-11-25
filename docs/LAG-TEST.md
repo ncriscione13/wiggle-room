@@ -38,4 +38,6 @@ Target: **under 100 ms** from a real movement to the picture changing on the TV.
 | > 120 ms   | Over the hard limit — send me the numbers + what the debug overlay (D) shows per stage |
 
 Record for the playtest notes: median ms, TV model, and the per-stage numbers
-from the debug overlay (press **D**: camera interval, inference, render fps).
+from the debug overlay. The overlay lives on the **normal stage**, not the lag
+screen: open the app **without** `?screen=lagtest` and press **D** there
+(camera interval, inference, render ms/fps).

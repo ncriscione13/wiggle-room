@@ -97,17 +97,26 @@ export const POSE_CONNECTIONS: readonly [number, number][] = [
 ];
 
 /** Returns a list of problems; empty = valid. Checks structure, not physics.
- * The input is typically parsed JSON, so runtime values may violate the type. */
+ * The input is typically parsed JSON, so runtime values may violate the type
+ * -- every field is treated as untrusted (review fix). */
 export function validateClipFile(clip: ClipFile): string[] {
   const problems: string[] = [];
   const version: number = clip.version;
   if (version !== CLIP_VERSION) problems.push(`unknown version ${String(version)}`);
-  if (clip.name === '') problems.push('empty name');
+  const name: unknown = clip.name;
+  if (typeof name !== 'string' || name === '') problems.push('missing name');
+  const kind: unknown = clip.kind;
+  if (kind !== 'synthetic' && kind !== 'recorded') problems.push('kind must be synthetic|recorded');
   if (!(clip.nominalFps > 0)) problems.push('nominalFps must be > 0');
+  if (!Array.isArray(clip.frames)) return [...problems, 'frames missing'];
   if (clip.frames.length === 0) problems.push('no frames');
 
   let lastT = -Infinity;
   for (const [i, frame] of clip.frames.entries()) {
+    if (typeof frame !== 'object' || !Array.isArray((frame as { poses?: unknown }).poses)) {
+      problems.push(`frame ${String(i)}: not a {tS, poses} object`);
+      break;
+    }
     if (!(frame.tS > lastT)) {
       problems.push(`frame ${String(i)}: tS ${String(frame.tS)} not strictly increasing`);
       break; // one report is enough; a broken clock would spam

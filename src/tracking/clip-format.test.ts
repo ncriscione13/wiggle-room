@@ -84,4 +84,19 @@ describe('validateClipFile edge paths', () => {
     const clip = { ...validClip(), frames: [] };
     expect(validateClipFile(clip).join(' ')).toMatch(/frames/);
   });
+
+  it('treats every field as untrusted JSON (review fix)', () => {
+    const noName = { ...validClip(), name: undefined as unknown as string };
+    expect(validateClipFile(noName).join(' ')).toMatch(/name/);
+
+    const badKind = { ...validClip(), kind: 'video' as unknown as 'recorded' };
+    expect(validateClipFile(badKind).join(' ')).toMatch(/kind/);
+
+    const noFrames = { ...validClip(), frames: undefined as unknown as [] };
+    expect(validateClipFile(noFrames).join(' ')).toMatch(/frames/);
+
+    const badFrame = validClip();
+    badFrame.frames[1] = { tS: 1 } as unknown as (typeof badFrame.frames)[number];
+    expect(validateClipFile(badFrame).join(' ')).toMatch(/poses/);
+  });
 });

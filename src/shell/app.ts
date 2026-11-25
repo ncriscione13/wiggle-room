@@ -4,14 +4,16 @@
 
 import { openCamera, CameraOpenError, type CameraHandle } from '../tracking/camera';
 import { DEVICE_CHECK_DURATION_S } from '../motion/config';
+import { DEVICE_CHECK_TRACKING_MAX_S } from '../motion/config';
 import {
-  collectInferenceSamples,
+  collectBenchmarkSamples,
   loadDeviceCheckRecord,
   planDeviceCheck,
   renderSlowDeviceWarning,
   saveDeviceCheckRecord,
+  shouldUpgradeBenchmark,
   summarizeSamples,
-  type SampleSummary,
+  type BenchmarkSamples,
 } from './device-check';
 import { createPoseLandmarker } from '../tracking/landmarker';
 import { LivePoseSource } from '../tracking/live-pose-source';
@@ -39,6 +41,16 @@ interface StageSession {
 }
 
 let session: StageSession | null = null;
+
+/** Tears down the live-path extras (chip interval, chip, upgrade watcher,
+ * landmarker) that outlive a single StageSession (review fix). */
+let liveTeardown: (() => void) | null = null;
+
+const round1 = (n: number): number => Math.round(n * 10) / 10;
+
+/** Thrown when a benchmark can't complete (source stopped mid-bench); the
+ * check is skipped without saving a record and without an error screen. */
+class BenchAborted extends Error {}
 
 function startStageSession(
   root: HTMLElement,
@@ -88,6 +100,7 @@ function renderDroppedBadge(root: HTMLElement, clip: ClipFile): void {
 
 function playDroppedClip(root: HTMLElement, clip: ClipFile): void {
   session?.destroy();
+  liveTeardown?.();
   const replay = new ReplayPoseSource(clip, { loop: true });
   const s = startStageSession(root, replay, `${clip.name} (dropped)`);
   s.overlay.events.push('replay started (dropped clip)', 0);
@@ -105,8 +118,9 @@ async function bootLagTest(root: HTMLElement, config: SourceConfig): Promise<voi
     mountLagTestScreen(root, replay);
     return;
   }
+  let camera: CameraHandle | null = null;
   try {
-    const camera = await openCamera();
+    camera = await openCamera();
     const handle = await createPoseLandmarker();
     const live = new LivePoseSource({ video: camera.video, landmarker: handle.landmarker });
     live.onError(() => {
@@ -115,7 +129,11 @@ async function bootLagTest(root: HTMLElement, config: SourceConfig): Promise<voi
     await live.start();
     mountLagTestScreen(root, live);
   } catch (error) {
-    const kind = error instanceof CameraOpenError ? error.kind : 'unknown';
+    // Never leave the webcam running behind an error screen (review fix),
+    // and name the real problem: a thrown CameraOpenError keeps its kind;
+    // anything else here is the tracking engine failing to load.
+    camera?.stop();
+    const kind = error instanceof CameraOpenError ? error.kind : 'model';
     renderCameraErrorScreen(root, kind);
   }
 }
@@ -123,15 +141,17 @@ async function bootLagTest(root: HTMLElement, config: SourceConfig): Promise<voi
 /** M0.8: guided recording of the real-kid clips, with the stage behind for
  * framing feedback. Live camera only; no device check in the way. */
 async function bootRecord(root: HTMLElement): Promise<void> {
+  let camera: CameraHandle | null = null;
   try {
-    const camera = await openCamera();
+    camera = await openCamera();
     const handle = await createPoseLandmarker();
     const live = new LivePoseSource({ video: camera.video, landmarker: handle.landmarker });
     live.onError(() => {
       renderCameraErrorScreen(root, 'unknown');
     });
+    const cam = camera;
     startStageSession(root, live, 'recording mode', () => {
-      camera.stop();
+      cam.stop();
     });
     await live.start();
     const raw = new URLSearchParams(window.location.search).get('promptSeconds');
@@ -142,7 +162,8 @@ async function bootRecord(root: HTMLElement): Promise<void> {
       Number.isFinite(override) ? { promptSecondsOverride: override } : {},
     );
   } catch (error) {
-    const kind = error instanceof CameraOpenError ? error.kind : 'unknown';
+    camera?.stop();
+    const kind = error instanceof CameraOpenError ? error.kind : 'model';
     renderCameraErrorScreen(root, kind);
   }
 }
@@ -195,65 +216,134 @@ export async function bootApp(root: HTMLElement): Promise<void> {
     return;
   }
 
+  let handle: Awaited<ReturnType<typeof createPoseLandmarker>> | null = null;
   try {
-    const handle = await createPoseLandmarker();
+    handle = await createPoseLandmarker();
+    const landmarker = handle;
 
     const attach = async (cam: CameraHandle): Promise<LivePoseSource> => {
-      const live = new LivePoseSource({ video: cam.video, landmarker: handle.landmarker });
+      const live = new LivePoseSource({ video: cam.video, landmarker: landmarker.landmarker });
       live.onError(() => {
         renderCameraErrorScreen(root, 'unknown');
       });
       const s = startStageSession(root, live, labelOf(cam), () => {
         cam.stop();
       });
-      s.overlay.events.push(`tracking started · ${handle.delegate}`, 0);
+      s.overlay.events.push(`tracking started · ${landmarker.delegate}`, 0);
       await live.start();
       return live;
     };
 
     let live = await attach(camera);
 
-    // M0.6: first-run device check (skipped once a record exists).
+    // M0.6: first-run device check (skipped once a record exists). A bench
+    // that can't finish (source stopped) aborts without saving a record.
     if (loadDeviceCheckRecord() === null) {
-      let finalSummary: SampleSummary = { avgS: 0, p99S: 0, count: 0 };
-      const outcome = await planDeviceCheck(async (step) => {
-        if (step.widthPx !== null && step.heightPx !== null) {
-          session?.destroy(); // stops live + stage + overlay + that camera
-          camera = await openCamera({ widthPx: step.widthPx, heightPx: step.heightPx });
-          live = await attach(camera);
-        }
-        chip.textContent = `Device check… · ${labelOf(camera)}`;
-        finalSummary = summarizeSamples(
-          await collectInferenceSamples(live, DEVICE_CHECK_DURATION_S),
-        );
-        return finalSummary.avgS;
-      });
+      try {
+        let finalBench: BenchmarkSamples = { samplesS: [], maxPoses: 0 };
+        const outcome = await planDeviceCheck(async (step) => {
+          if (step.widthPx !== null && step.heightPx !== null) {
+            session?.destroy(); // stops live + stage + overlay + that camera
+            camera = await openCamera({ widthPx: step.widthPx, heightPx: step.heightPx });
+            live = await attach(camera);
+          }
+          chip.textContent = `Device check… · ${labelOf(camera)}`;
+          const bench = await collectBenchmarkSamples(live, DEVICE_CHECK_DURATION_S);
+          if (bench === null) throw new BenchAborted('benchmark source stopped');
+          finalBench = bench;
+          return summarizeSamples(bench.samplesS).avgS;
+        });
 
-      const round1 = (n: number): number => Math.round(n * 10) / 10;
-      saveDeviceCheckRecord({
-        avgMs: round1(outcome.avgS * 1000),
-        p99Ms: round1(finalSummary.p99S * 1000),
-        widthPx: camera.widthPx,
-        heightPx: camera.heightPx,
-        delegate: handle.delegate,
-        warned: outcome.warned,
-        atMs: Date.now(),
-      });
-      session?.overlay.events.push(
-        `device check · avg ${round1(outcome.avgS * 1000).toFixed(1)} ms @ ${labelOf(camera)}`,
-        0,
-      );
-      if (outcome.warned) renderSlowDeviceWarning(root);
+        const summary = summarizeSamples(finalBench.samplesS);
+        saveDeviceCheckRecord({
+          avgMs: round1(outcome.avgS * 1000),
+          p99Ms: round1(summary.p99S * 1000),
+          widthPx: camera.widthPx,
+          heightPx: camera.heightPx,
+          delegate: landmarker.delegate,
+          posesSeen: finalBench.maxPoses,
+          warned: outcome.warned,
+          atMs: Date.now(),
+        });
+        session?.overlay.events.push(
+          `device check · avg ${round1(outcome.avgS * 1000).toFixed(1)} ms · ` +
+            `${String(finalBench.maxPoses)} poses @ ${labelOf(camera)}`,
+          0,
+        );
+        if (outcome.warned) renderSlowDeviceWarning(root);
+      } catch (error) {
+        if (!(error instanceof BenchAborted)) throw error;
+        session?.overlay.events.push('device check aborted (source stopped)', 0);
+        if (session?.source !== live) {
+          // Something else (a dropped clip) took over mid-check; stand down.
+          chip.remove();
+          landmarker.close();
+          return;
+        }
+      }
     }
+
+    // The stored bench is only as valid as the number of kids it saw. The
+    // first time MORE kids are in frame than benchmarked, re-measure
+    // passively and upgrade the record (review fix: a one-person first run
+    // must never stand as the two-kid number forever).
+    let upgrading = false;
+    const offUpgrade = live.onFrame((frame) => {
+      if (upgrading) return;
+      const posesNow = frame.poses.filter((p) => p !== null).length;
+      const record = loadDeviceCheckRecord();
+      if (!shouldUpgradeBenchmark(record, posesNow)) return;
+      upgrading = true;
+      const liveNow = live;
+      void (async (): Promise<void> => {
+        const bench = await collectBenchmarkSamples(liveNow, DEVICE_CHECK_DURATION_S);
+        const current = loadDeviceCheckRecord();
+        if (bench !== null && current !== null) {
+          const summary = summarizeSamples(bench.samplesS);
+          const overBudget = summary.avgS > DEVICE_CHECK_TRACKING_MAX_S;
+          saveDeviceCheckRecord({
+            ...current,
+            avgMs: round1(summary.avgS * 1000),
+            p99Ms: round1(summary.p99S * 1000),
+            posesSeen: Math.max(current.posesSeen, bench.maxPoses),
+            warned: current.warned || overBudget,
+            atMs: Date.now(),
+          });
+          session?.overlay.events.push(
+            `device check upgraded · ${String(bench.maxPoses)} poses · ` +
+              `avg ${round1(summary.avgS * 1000).toFixed(1)} ms`,
+            frame.tS,
+          );
+          if (overBudget && !current.warned) renderSlowDeviceWarning(root);
+        }
+        upgrading = false;
+      })();
+    });
 
     const update = (): void => {
       const poseCount = live.latest()?.poses.filter((p) => p !== null).length ?? 0;
       chip.textContent =
         `Tracking · ${String(live.frames())} frames · ${String(poseCount)} poses · ` +
-        `${labelOf(camera)} · ${handle.delegate}`;
+        `${labelOf(camera)} · ${landmarker.delegate}`;
     };
-    window.setInterval(update, 500);
-  } catch {
-    renderCameraErrorScreen(root, 'unknown');
+    const chipInterval = window.setInterval(update, 500);
+
+    liveTeardown = (): void => {
+      window.clearInterval(chipInterval);
+      offUpgrade();
+      chip.remove();
+      landmarker.close();
+      liveTeardown = null;
+    };
+  } catch (error) {
+    // Clean teardown on any failure: no webcam LED behind an error screen,
+    // no stuck "Device check…" chip, and the honest problem named.
+    session?.destroy();
+    session = null;
+    camera.stop();
+    chip.remove();
+    handle?.close();
+    const kind = error instanceof CameraOpenError ? error.kind : 'model';
+    renderCameraErrorScreen(root, kind);
   }
 }

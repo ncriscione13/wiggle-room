@@ -1,12 +1,15 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { ClipPose } from '../tracking/clip-format';
 import type { FrameHandler, PoseFrame, PoseSource } from '../tracking/pose-source';
 import {
-  collectInferenceSamples,
+  collectBenchmarkSamples,
   loadDeviceCheckRecord,
   planDeviceCheck,
   saveDeviceCheckRecord,
+  shouldUpgradeBenchmark,
   SLOW_DEVICE_COPY,
   summarizeSamples,
+  type DeviceCheckRecord,
   type KeyValueStore,
 } from './device-check';
 
@@ -82,31 +85,72 @@ class FakeSource implements PoseSource {
   latest(): PoseFrame | null {
     return null;
   }
-  emit(tS: number, inferenceS: number): void {
+  emit(tS: number, inferenceS: number, posesCount = 0): void {
+    const pose = (): ClipPose => Array.from({ length: 33 }, () => [0.5, 0.5, 0, 1]);
+    const poses = [posesCount >= 1 ? pose() : null, posesCount >= 2 ? pose() : null];
     for (const h of this.handlers) {
-      h({ tS, poses: [null, null], inferenceS, frameIntervalS: 1 / 30 });
+      h({ tS, poses, inferenceS, frameIntervalS: 1 / 30 });
     }
   }
 }
 
-describe('collectInferenceSamples (M0.6)', () => {
-  it('collects until the requested duration of frames has passed', async () => {
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+describe('collectBenchmarkSamples (M0.6)', () => {
+  it('collects until the requested duration of frames has passed, tracking max poses', async () => {
     const source = new FakeSource();
-    const promise = collectInferenceSamples(source, 1);
-    for (let i = 0; i <= 35; i += 1) source.emit(i / 30, 0.01 + i / 10000);
-    const samples = await promise;
-    expect(samples.length).toBeGreaterThanOrEqual(30);
-    expect(samples[0]).toBeCloseTo(0.01, 6);
+    const promise = collectBenchmarkSamples(source, 1);
+    for (let i = 0; i <= 35; i += 1) source.emit(i / 30, 0.01 + i / 10000, i === 5 ? 2 : 1);
+    const bench = await promise;
+    expect(bench).not.toBeNull();
+    expect(bench?.samplesS.length).toBeGreaterThanOrEqual(30);
+    expect(bench?.samplesS[0]).toBeCloseTo(0.01, 6);
+    expect(bench?.maxPoses).toBe(2);
   });
 
   it('unsubscribes when done (no further samples collected)', async () => {
     const source = new FakeSource();
-    const promise = collectInferenceSamples(source, 0.1);
+    const promise = collectBenchmarkSamples(source, 0.1);
     for (let i = 0; i <= 10; i += 1) source.emit(i / 30, 0.01);
-    const samples = await promise;
-    const lengthWhenDone = samples.length;
+    const bench = await promise;
+    const lengthWhenDone = bench?.samplesS.length;
     source.emit(99, 0.01);
-    expect(samples.length).toBe(lengthWhenDone);
+    expect(bench?.samplesS.length).toBe(lengthWhenDone);
+  });
+
+  it('resolves null when the source stops feeding frames (review fix)', async () => {
+    vi.useFakeTimers();
+    const source = new FakeSource();
+    const promise = collectBenchmarkSamples(source, 5, 2000);
+    source.emit(0, 0.01, 1); // a frame or two, then silence
+    vi.advanceTimersByTime(2001);
+    await expect(promise).resolves.toBeNull();
+  });
+});
+
+describe('shouldUpgradeBenchmark (M0.6 review fix)', () => {
+  const record = (posesSeen: number): DeviceCheckRecord => ({
+    avgMs: 10,
+    p99Ms: 14,
+    widthPx: 640,
+    heightPx: 480,
+    delegate: 'GPU',
+    posesSeen,
+    warned: false,
+    atMs: 1,
+  });
+
+  it('asks for a re-bench when more kids are in frame than the bench ever saw', () => {
+    expect(shouldUpgradeBenchmark(record(0), 1)).toBe(true);
+    expect(shouldUpgradeBenchmark(record(1), 2)).toBe(true);
+  });
+
+  it('stays quiet at or below the benchmarked count, and with no record', () => {
+    expect(shouldUpgradeBenchmark(record(2), 2)).toBe(false);
+    expect(shouldUpgradeBenchmark(record(2), 1)).toBe(false);
+    expect(shouldUpgradeBenchmark(null, 2)).toBe(false);
   });
 });
 
@@ -129,12 +173,17 @@ describe('device check record storage (M0.6)', () => {
         widthPx: 640,
         heightPx: 480,
         delegate: 'GPU',
+        posesSeen: 2,
         warned: false,
         atMs: 123,
       },
       store,
     );
-    expect(loadDeviceCheckRecord(store)).toMatchObject({ avgMs: 12.5, delegate: 'GPU' });
+    expect(loadDeviceCheckRecord(store)).toMatchObject({
+      avgMs: 12.5,
+      delegate: 'GPU',
+      posesSeen: 2,
+    });
   });
 
   it('treats corrupted storage as absent', () => {

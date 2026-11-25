@@ -33,6 +33,9 @@ export class ReplayPoseSource implements PoseSource {
   private loopOffsetS = 0;
   private startedAtMs = 0;
   private running = false;
+  /** Bumped on every start/stop so a stale callback can never fork the loop
+   * (e.g. a frame handler calling stop() + start() synchronously). */
+  private generation = 0;
 
   constructor(clip: ClipFile, options: ReplayOptions = {}) {
     const first = clip.frames[0];
@@ -47,6 +50,7 @@ export class ReplayPoseSource implements PoseSource {
   start(): Promise<void> {
     if (!this.running) {
       this.running = true;
+      this.generation += 1;
       this.index = 0;
       this.loopOffsetS = 0;
       this.latestFrame = null;
@@ -58,6 +62,7 @@ export class ReplayPoseSource implements PoseSource {
 
   stop(): void {
     this.running = false;
+    this.generation += 1;
     if (this.timer !== null) {
       clearTimeout(this.timer);
       this.timer = null;
@@ -105,8 +110,11 @@ export class ReplayPoseSource implements PoseSource {
 
     const targetMs = this.frameTimeS(this.index) * 1000;
     const delayMs = Math.max(0, targetMs - (this.now() - this.startedAtMs));
+    const gen = this.generation;
     this.timer = setTimeout(() => {
+      if (gen !== this.generation) return; // stale chain: a restart happened
       this.emit(this.index);
+      if (gen !== this.generation) return; // a handler stopped/restarted us
       this.index += 1;
       this.scheduleNext();
     }, delayMs);

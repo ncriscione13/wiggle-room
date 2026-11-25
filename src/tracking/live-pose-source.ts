@@ -80,6 +80,9 @@ export class LivePoseSource implements PoseSource {
   private rvfcHandle: number | null = null;
   private baseMs: number | null = null;
   private running = false;
+  /** Bumped on start/stop so a stale rVFC callback can't fork the loop into
+   * two chains (which would mean two detectForVideo per frame -- rule 2). */
+  private generation = 0;
 
   constructor(options: LivePoseSourceOptions) {
     this.video = options.video;
@@ -90,6 +93,7 @@ export class LivePoseSource implements PoseSource {
   start(): Promise<void> {
     if (!this.running) {
       this.running = true;
+      this.generation += 1;
       this.scheduleNext();
     }
     return Promise.resolve();
@@ -97,6 +101,7 @@ export class LivePoseSource implements PoseSource {
 
   stop(): void {
     this.running = false;
+    this.generation += 1;
     if (this.rvfcHandle !== null) {
       this.video.cancelVideoFrameCallback(this.rvfcHandle);
       this.rvfcHandle = null;
@@ -129,13 +134,14 @@ export class LivePoseSource implements PoseSource {
 
   private scheduleNext(): void {
     if (!this.running) return;
+    const gen = this.generation;
     this.rvfcHandle = this.video.requestVideoFrameCallback((nowMs) => {
-      this.onVideoFrame(nowMs);
+      this.onVideoFrame(nowMs, gen);
     });
   }
 
-  private onVideoFrame(nowMs: number): void {
-    if (!this.running) return;
+  private onVideoFrame(nowMs: number, gen: number): void {
+    if (!this.running || gen !== this.generation) return;
     const tsMs = this.clock.next(nowMs);
     this.baseMs ??= tsMs;
 
@@ -161,6 +167,8 @@ export class LivePoseSource implements PoseSource {
     this.frameCount += 1;
     for (const handler of this.handlers) handler(frame);
 
+    // A handler may have stopped/restarted us; never continue a stale chain.
+    if (gen !== this.generation) return;
     // Register for the NEXT video frame only now: one detect per frame, no queue.
     this.scheduleNext();
   }

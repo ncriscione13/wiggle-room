@@ -17,15 +17,16 @@ test('guided recording: space -> countdown -> recording -> download -> next prom
   await expect(page.getByTestId('record-title')).toContainText('statue');
   await expect(page.getByTestId('record-progress')).toContainText('1 of 8');
 
-  const downloadPromise = page.waitForEvent('download', { timeout: 60_000 });
   await page.keyboard.press('Space');
   // countdown -> recording are transient (3 s + 2 s) and owned by the reducer
-  // unit tests; here we assert the stable outcomes only.
+  // unit tests; here we assert the stable outcomes only. The download fires
+  // from the S keydown (user activation; review fix), never from a timer.
+  await expect(director).toHaveAttribute('data-phase', 'review', { timeout: 30_000 });
+
+  const downloadPromise = page.waitForEvent('download', { timeout: 30_000 });
+  await page.keyboard.press('s');
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toBe('standing-still-30s.json');
-  await expect(director).toHaveAttribute('data-phase', 'review', { timeout: 15_000 });
-
-  await page.keyboard.press('n');
   await expect(director).toHaveAttribute('data-phase', 'idle');
   await expect(director).toHaveAttribute('data-prompt', 'bunny-hops-x5');
   await expect(page.getByTestId('record-progress')).toContainText('2 of 8');

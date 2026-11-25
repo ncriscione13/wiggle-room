@@ -94,7 +94,11 @@ export function mountDebugOverlay(root: HTMLElement, deps: DebugOverlayDeps): De
         ? `${ms(inferenceMs.mean())} (p99 ${ms(inferenceMs.p99())})`
         : '0.0 ms (replay)';
     motionValue.textContent = 'arrives in M1';
-    renderValue.textContent = `${deps.stage.actualFps().toFixed(1)} fps`;
+    // Whole-frame time (1000/fps). Draw-stage-only ms needs instrumentation
+    // Phaser doesn't expose; logged in DECISIONS (M0 review).
+    const fps = deps.stage.actualFps();
+    const frameMs = fps > 0 ? 1000 / fps : 0;
+    renderValue.textContent = `${frameMs.toFixed(1)} ms/frame · ${fps.toFixed(1)} fps`;
     eventsList.textContent = '';
     for (const e of events.entries()) {
       const line = document.createElement('div');

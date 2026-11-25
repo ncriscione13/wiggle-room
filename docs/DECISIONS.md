@@ -2,6 +2,40 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-25 — M0 fresh-eyes review — 12 findings, all addressed
+
+- **Device check is now pose-aware** (IMPORTANT): the benchmark records `posesSeen` (max
+  simultaneous poses it actually saw), and the first time MORE kids are in frame than the
+  stored bench ever saw, a passive 5 s re-bench upgrades the record mid-session (warning
+  shown once if the real two-kid number is over budget). A one-person first run can no
+  longer stand as the two-kid measurement forever. The reduction ladder still runs only
+  on the explicit first-run check; M1.10's parent settings add a manual re-run.
+- **Guided-recording downloads moved into the S keydown** (IMPORTANT): Chrome silently
+  blocks repeated automatic downloads fired from timers (no user activation), which
+  would have eaten takes 2–8 on recording day while the UI said "Saved". Review phase is
+  now "S save & next · R redo"; every download carries user activation.
+- **Error paths clean up and tell the truth** (IMPORTANT): every boot path stops the
+  camera on failure (no webcam LED behind an error screen), preserves a thrown
+  CameraOpenError's kind, and a landmarker failure gets its own 'model' screen ("the
+  tracking engine could not load") instead of camera advice. Stuck "Device check…" chips
+  are removed; error screens sit above all chips (z-index 40).
+- **Live-path extras are torn down on session swap**: chip interval, upgrade watcher,
+  chip and landmarker (`liveTeardown`); previously the "Tracking" chip kept narrating a
+  stopped source over a dropped-clip replay and `LandmarkerHandle.close` had no callers.
+- **Benchmarks can abort**: `collectBenchmarkSamples` resolves null on a wall-clock fuse
+  if the source stops mid-bench (error, dropped clip); the check is skipped without
+  saving a record instead of hanging the boot forever.
+- **Restart-from-handler can't fork the loops**: both sources carry a generation token;
+  a stale rVFC/timer callback from before a stop/restart dies instead of double-running
+  `detectForVideo` per frame (rule 2) or interleaving replay frames. Replay has a test.
+- Also: dev-tools transient-chip fuse tracked (a stale fuse could remove the next REC
+  indicator); overlay render row shows ms/frame + fps (draw-stage-only ms needs
+  instrumentation Phaser doesn't expose — revisit if the 17 ms budget gets tight);
+  LAG-TEST.md now sends Nick to the normal stage URL for overlay numbers (D does nothing
+  on the lag screen); `validateClipFile` treats every field as untrusted JSON; the drop
+  e2e pins actual playback via the overlay event; a stage-math test comment had its
+  anatomy backwards (math was right).
+
 ## 2026-11-25 — M0.8 — Clip-recording mode
 
 - **Real-clip names deliberately differ from synthetic names** (`bunny-hops-x5` vs

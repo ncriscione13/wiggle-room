@@ -14,9 +14,15 @@ test.describe('device check (M0.6)', () => {
 
     const raw = await page.evaluate(() => localStorage.getItem('wiggle.device-check.v1'));
     expect(raw).toBeTruthy();
-    const record = JSON.parse(raw ?? '{}') as { avgMs: number; widthPx: number; atMs: number };
+    const record = JSON.parse(raw ?? '{}') as {
+      avgMs: number;
+      widthPx: number;
+      posesSeen: number;
+      atMs: number;
+    };
     expect(record.avgMs).toBeGreaterThan(0);
     expect(record.widthPx).toBeGreaterThan(0);
+    expect(record.posesSeen).toBeGreaterThanOrEqual(0); // validity marker (review fix)
   });
 
   test('a stored record skips the check entirely', async ({ page }) => {
@@ -26,6 +32,7 @@ test.describe('device check (M0.6)', () => {
       widthPx: 640,
       heightPx: 480,
       delegate: 'GPU',
+      posesSeen: 2,
       warned: false,
       atMs: 1_700_000_000_000,
     };

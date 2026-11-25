@@ -16,10 +16,13 @@ export function mountDevTools(root: HTMLElement, deps: DevToolsDeps): void {
   const recorder = new PoseRecorder();
   let chip: HTMLElement | null = null;
   let chipTimer: number | null = null;
+  let chipFuse: number | null = null;
 
   const removeChip = (): void => {
     if (chipTimer !== null) window.clearInterval(chipTimer);
+    if (chipFuse !== null) window.clearTimeout(chipFuse);
     chipTimer = null;
+    chipFuse = null;
     chip?.remove();
     chip = null;
   };
@@ -43,7 +46,9 @@ export function mountDevTools(root: HTMLElement, deps: DevToolsDeps): void {
     });
     root.appendChild(el);
     chip = el;
-    if (transientMs !== undefined) window.setTimeout(removeChip, transientMs);
+    // The fuse is tracked so a NEW chip (e.g. the next recording's REC
+    // indicator) cancels it -- a stale fuse must never remove a fresh chip.
+    if (transientMs !== undefined) chipFuse = window.setTimeout(removeChip, transientMs);
     return el;
   };
 

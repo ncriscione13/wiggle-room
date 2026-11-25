@@ -137,4 +137,23 @@ describe('ReplayPoseSource (M0.2)', () => {
     const empty: ClipFile = { ...tinyClip(), frames: [] };
     expect(() => new ReplayPoseSource(empty, { now })).toThrow(/frames/i);
   });
+
+  it('a handler restarting the source does not fork the timer chain (review fix)', async () => {
+    const source = new ReplayPoseSource(tinyClip(), { now });
+    const frames: PoseFrame[] = [];
+    let restarted = false;
+    source.onFrame((f) => {
+      frames.push(f);
+      if (!restarted && f.tS >= 0.1) {
+        restarted = true;
+        source.stop();
+        void source.start(); // synchronous restart from inside the handler
+      }
+    });
+    await source.start();
+    advance(1000);
+    // One clean replay up to the restart (2 frames), then one full fresh pass
+    // (4 frames) -- never interleaved duplicates from two live chains.
+    expect(frames.map((f) => f.tS)).toEqual([0, 0.1, 0, 0.1, 0.2, 0.3]);
+  });
 });

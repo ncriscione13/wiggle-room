@@ -5,7 +5,10 @@
 import type { CameraErrorKind } from '../tracking/camera';
 import { colors, px, typography } from '../ui/theme';
 
-export const CAMERA_ERROR_COPY: Record<CameraErrorKind, { title: string; hint: string }> = {
+/** Camera failures plus the tracking-engine one ("model failed to load"). */
+export type ProblemKind = CameraErrorKind | 'model';
+
+export const CAMERA_ERROR_COPY: Record<ProblemKind, { title: string; hint: string }> = {
   denied: {
     title: 'The camera is turned off for this page',
     hint: 'Click the camera icon in the address bar, allow the camera, then try again.',
@@ -26,9 +29,13 @@ export const CAMERA_ERROR_COPY: Record<CameraErrorKind, { title: string; hint: s
     title: 'The camera could not start',
     hint: 'Unplug and replug the webcam, or restart Chrome, then try again.',
   },
+  model: {
+    title: 'The tracking engine could not load',
+    hint: 'Check that the page finished loading, then try again. If it keeps happening, clear this site’s data and reload.',
+  },
 };
 
-export function renderCameraErrorScreen(root: HTMLElement, kind: CameraErrorKind): void {
+export function renderCameraErrorScreen(root: HTMLElement, kind: ProblemKind): void {
   const copy = CAMERA_ERROR_COPY[kind];
 
   const screen = document.createElement('div');
@@ -37,6 +44,7 @@ export function renderCameraErrorScreen(root: HTMLElement, kind: CameraErrorKind
   Object.assign(screen.style, {
     position: 'fixed',
     inset: '0',
+    zIndex: '40',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',

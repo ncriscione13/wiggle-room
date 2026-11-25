@@ -34,19 +34,51 @@ export function summarizeSamples(samplesS: readonly number[]): SampleSummary {
 }
 
 /** Collects inference times until `durationS` of frame time has passed. */
-export function collectInferenceSamples(source: PoseSource, durationS: number): Promise<number[]> {
+export interface BenchmarkSamples {
+  samplesS: number[];
+  /** Most simultaneous poses seen during the bench -- the record stores it so
+   * a one-person first run is never mistaken for a two-kid measurement. */
+  maxPoses: number;
+}
+
+/**
+ * Collects inference times until `durationS` of frame time has passed.
+ * Resolves null if the source stops feeding frames (error, session swap)
+ * before then -- callers must treat null as "no valid benchmark", never save.
+ */
+export function collectBenchmarkSamples(
+  source: PoseSource,
+  durationS: number,
+  maxWallMs: number = durationS * 4000,
+): Promise<BenchmarkSamples | null> {
   return new Promise((resolve) => {
-    const samples: number[] = [];
+    const samplesS: number[] = [];
+    let maxPoses = 0;
     let startT: number | null = null;
+    const fuse = setTimeout(() => {
+      off();
+      resolve(null);
+    }, maxWallMs);
     const off = source.onFrame((frame) => {
       startT ??= frame.tS;
-      samples.push(frame.inferenceS);
+      samplesS.push(frame.inferenceS);
+      maxPoses = Math.max(maxPoses, frame.poses.filter((p) => p !== null).length);
       if (frame.tS - startT >= durationS) {
+        clearTimeout(fuse);
         off();
-        resolve(samples);
+        resolve({ samplesS, maxPoses });
       }
     });
   });
+}
+
+/** A later frame shows more kids than the stored bench ever saw -> the stored
+ * numbers under-measure and must be re-taken (passively, mid-session). */
+export function shouldUpgradeBenchmark(
+  record: DeviceCheckRecord | null,
+  posesInFrame: number,
+): boolean {
+  return record !== null && posesInFrame > record.posesSeen;
 }
 
 // --- Decision flow -----------------------------------------------------------
@@ -130,6 +162,8 @@ export interface DeviceCheckRecord {
   widthPx: number;
   heightPx: number;
   delegate: string;
+  /** Most simultaneous poses the benchmark actually saw (validity marker). */
+  posesSeen: number;
   warned: boolean;
   atMs: number;
 }

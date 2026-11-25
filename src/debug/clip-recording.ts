@@ -120,7 +120,11 @@ export function mountClipRecordingDirector(
   let countdownLeft = RECORD_COUNTDOWN_S;
   let countdownTimer: number | null = null;
   let recordingTimer: number | null = null;
-  let lastSavedLabel = '';
+  // The finished take waits here; the DOWNLOAD happens inside the S keydown
+  // handler so it carries user activation -- Chrome silently blocks repeated
+  // automatic downloads fired from timers (review fix).
+  let pendingClip: ReturnType<PoseRecorder['stop']> = null;
+  let reviewLabel = '';
 
   const durationOf = (prompt: ClipPrompt): number =>
     options.promptSecondsOverride !== undefined
@@ -201,7 +205,7 @@ export function mountClipRecordingDirector(
         break;
       case 'review':
         big.textContent = '✓';
-        hint.textContent = `${lastSavedLabel} · N next · R redo`;
+        hint.textContent = `${reviewLabel} · S save & next · R redo`;
         break;
       case 'done':
         title.textContent = 'All clips recorded!';
@@ -230,17 +234,16 @@ export function mountClipRecordingDirector(
 
     if (state.phase === 'recording') {
       clearTimers();
+      pendingClip = null;
       recorder.start(source);
       const prompt = CLIP_PROMPTS[state.promptIndex];
       recordingTimer = window.setInterval(() => {
         if (prompt !== undefined && recorder.durationS >= durationOf(prompt)) {
-          const clip = recorder.stop(prompt.name);
-          if (clip !== null) {
-            downloadClip(clip);
-            lastSavedLabel = `Saved ${clip.name}.json (${String(clip.frames.length)} frames)`;
-          } else {
-            lastSavedLabel = 'Nothing captured — R to retry';
-          }
+          pendingClip = recorder.stop(prompt.name);
+          reviewLabel =
+            pendingClip !== null
+              ? `${pendingClip.name}.json ready (${String(pendingClip.frames.length)} frames)`
+              : 'Nothing captured — R to retry';
           dispatch('recordingDone');
         } else {
           render();
@@ -255,9 +258,21 @@ export function mountClipRecordingDirector(
   };
 
   const onKey = (event: KeyboardEvent): void => {
-    if (event.key === ' ') dispatch('primary');
-    else if (event.key.toLowerCase() === 'n') dispatch('next');
-    else if (event.key.toLowerCase() === 'r') dispatch('redo');
+    if (event.key === ' ') {
+      dispatch('primary');
+    } else if (event.key.toLowerCase() === 's') {
+      if (state.phase !== 'review') return;
+      // Download inside the keydown: user activation makes Chrome allow
+      // every take's download, not just the first.
+      if (pendingClip !== null) {
+        downloadClip(pendingClip);
+        pendingClip = null;
+      }
+      dispatch('next');
+    } else if (event.key.toLowerCase() === 'r') {
+      pendingClip = null;
+      dispatch('redo');
+    }
   };
   window.addEventListener('keydown', onKey);
   render();
