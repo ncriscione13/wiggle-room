@@ -2,6 +2,20 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-25 — M0.2a — PoseSource interface + ReplayPoseSource
+
+- **`PoseFrame.tS` is the source's own monotonic clock**, starting near 0: live =
+  performance.now-based; replay = the replayed timeline (clip time ÷ speed), so at
+  `speed: 2` timestamps arrive wall-clock-paced at half the clip values and overlay
+  timings stay truthful. Detector clip tests bypass the replay source entirely (they feed
+  frames directly via the clip-runner), so clip-time fidelity for detectors is unaffected.
+- **Replay loop mode** continues timestamps across the seam (+ one nominal frame gap),
+  keeping `tS` strictly increasing for downstream consumers.
+- **Injectable `now()` clock** in ReplayPoseSource so the timing tests are exact under
+  fake timers instead of sleeping.
+- **`?speed=` URL param** (clamped 0.25–4) added to replay source-config for the M0.3
+  render stress test.
+
 ## 2026-11-25 — Phase 0 fresh-eyes review — 10 fixes + 1 logged decision
 
 An independent review agent audited the whole phase. Fixed:
