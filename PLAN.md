@@ -179,6 +179,65 @@ Gate: all three games playable from one launcher; playtest passes the fun checks
 
 (Claude Code adds one report per phase here: what was built, test counts, bench numbers, known gaps, and what I need to test on the TV.)
 
+### Phase M0 report — 2026-11-25
+
+**What was built.** The full camera-to-screen pipeline plus every measurement tool.
+`PoseSource` with two implementations: `ReplayPoseSource` (original or scaled timing,
+loop mode, `?speed=`) and `LivePoseSource` (MediaPipe VIDEO mode, exactly one
+`detectForVideo` per `requestVideoFrameCallback`, frames never queued, GPU delegate with
+CPU fallback, monotonic timestamps). Camera open with five friendly failure screens plus
+a 'model' screen for tracking-engine failures. Phaser 4 stage drawing the newest pose
+every refresh (mirrored; rendering never waits on tracking — proven by an isolated perf
+test holding >55 fps during 2× two-kid replay). Debug overlay (D): camera interval,
+inference mean/p99, render ms/fps, last-10 events. Pose recorder (R) saving
+landmarks-only JSON (key-set pinned by test), drag-and-drop replay. First-run device
+check: 5 s benchmark, 480p→320p input ladder before a parent-facing warning, record
+stores the pose count it actually saw and silently re-benches the first time more kids
+appear than it measured. Lag test screen (`?screen=lagtest`) + `docs/LAG-TEST.md`.
+Guided clip-recording mode (`?screen=record`): 8 prompts, countdown, auto-stop,
+S-to-save (every download user-activated so Chrome can't silently block takes).
+A fresh-eyes review found 12 issues (3 important — all would have hit your first-run or
+recording-day sessions); all fixed or logged, see DECISIONS.md "M0 fresh-eyes review".
+
+**Test counts.** 203 unit tests in 25 files + 21 Playwright specs (live MediaPipe
+pipeline, all five error screens, device-check first-run + skip, full guided-recording
+take, drop-replay with playback pinned, isolated 60 fps perf test). `npm run check`
+green locally and in CI.
+
+**Bench numbers.** The motion-kit bench still arrives in M1.1. Measured this phase:
+render holds 60 fps during 2× two-kid replay (55+ enforced in CI); live tracking on CI's
+CPU-only runner processes frames end-to-end (speed numbers from CI are meaningless —
+yours below are the real acceptance).
+
+**Known gaps (scheduled, none hidden).** Slot = detection order until M1.2 circle
+binding; floor circles are fixed debug positions until M1.2; overlay's motion-kit row
+says "arrives in M1"; draw-stage-only ms (vs whole-frame ms) needs instrumentation if
+the 17 ms budget ever gets tight; `bench`/`voice` still placeholders (M1.1/M1.6).
+
+**What Nick needs to test on the TV (this is the real M0 acceptance):**
+
+1. **Device check:** on the TV computer, open
+   https://ncriscione13.github.io/wiggle-room/ in Chrome full screen, let the camera
+   start, and stand in view — with **both kids in frame** at some point. Then press D
+   and read the **inference** number. Target: **≤ 20 ms** with two kids in frame. Tell
+   me avg + p99 and whether the delegate says GPU or CPU.
+2. **Lag test:** follow `docs/LAG-TEST.md` — open
+   https://ncriscione13.github.io/wiggle-room/?screen=lagtest, film hand + TV at 240 fps,
+   4–5 sharp flicks, count frames × 4.17 ms, take the median. Target **≤ 100 ms**,
+   hard limit 120. Send the median + TV model (+ overlay numbers from the normal stage
+   URL if it's over).
+3. **Record the 8 kid clips:** open
+   https://ncriscione13.github.io/wiggle-room/?screen=record — Space starts each take,
+   S saves it, R redoes it. If Chrome asks to "download multiple files", click Allow
+   (first save only). Then copy the 8 .json files from Downloads into
+   `test/clips/real/` in the repo and tell me — M1's detectors get tested against them.
+   (Dry-run alone first with `&promptSeconds=5` if you want to learn the flow.)
+4. **Sanity while you're there:** skeletons should track both kids smoothly with the
+   display mirrored (step left → skeleton steps the same way, like a mirror), and the
+   overlay (D) should show camera interval ≈ 16–33 ms.
+
+**Stopped and waiting** for your numbers before planning M1.
+
 ### Phase 0 report — 2026-11-25
 
 **What was built.** The fully guarded empty project: Vite 8 + strict TypeScript 6 toolchain
