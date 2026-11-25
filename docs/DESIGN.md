@@ -8,11 +8,11 @@ Wiggle Room (working name) is a free, open-source set of webcam motion games for
 
 v1 ships three games, each built around a different kind of movement:
 
-| Game | Movement | Why it's in v1 |
-| --- | --- | --- |
-| Freeze Dance | Whole body, stop and go | Listening and body control; zero reading needed |
-| Critter Dash | Running in place, jumping | The cardio game: a race against siblings or a pacer |
-| Bubble Pop | Reaching, stretching, squatting | Upper body and coordination; a 3-year-old can play it untaught |
+| Game         | Movement                        | Why it's in v1                                                 |
+| ------------ | ------------------------------- | -------------------------------------------------------------- |
+| Freeze Dance | Whole body, stop and go         | Listening and body control; zero reading needed                |
+| Critter Dash | Running in place, jumping       | The cardio game: a race against siblings or a pacer            |
+| Bubble Pop   | Reaching, stretching, squatting | Upper body and coordination; a 3-year-old can play it untaught |
 
 v1 goals:
 
@@ -28,11 +28,11 @@ Out of scope for v1: smart TV apps, online play, accounts.
 
 The minimum setup is one laptop and one HDMI cable; the app is the same on every option, only speed changes.
 
-| Setup | What you need | Trade-off |
-| --- | --- | --- |
-| Minimum | Laptop with built-in webcam + HDMI cable | Laptop sits on a stool facing the room; narrow view, so kids stand farther back |
-| Recommended | Minimum + wide-angle USB webcam on top of the TV | Fits kids side by side and lets them play closer |
-| Console-style | Mini PC (Intel N100 class) + wide-angle webcam, tucked behind the TV | Starts straight into the game full screen; no laptop to set up |
+| Setup         | What you need                                                        | Trade-off                                                                       |
+| ------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Minimum       | Laptop with built-in webcam + HDMI cable                             | Laptop sits on a stool facing the room; narrow view, so kids stand farther back |
+| Recommended   | Minimum + wide-angle USB webcam on top of the TV                     | Fits kids side by side and lets them play closer                                |
+| Console-style | Mini PC (Intel N100 class) + wide-angle webcam, tucked behind the TV | Starts straight into the game full screen; no laptop to set up                  |
 
 Room setup:
 
@@ -58,13 +58,13 @@ Side parts: Dev tools (pose replay, keyboard stand-ins) feed the motion kit. The
 
 The motion kit is the only part that reads tracking data. Games receive simple events.
 
-| Layer | Choice | Why |
-| --- | --- | --- |
-| Language and build | TypeScript + Vite | Fast dev server; builds to plain static files |
-| Body tracking | MediaPipe Pose Landmarker for the web | Free, Apache-2.0, runs in the browser, tracks several people |
-| Games | Phaser | Scenes, sprites, sound and animation built in |
-| Hosting | GitHub Pages, installable web app (PWA) | Free; one link; works offline after first visit |
-| Storage | Browser local storage | Settings and stars never leave the device |
+| Layer              | Choice                                  | Why                                                          |
+| ------------------ | --------------------------------------- | ------------------------------------------------------------ |
+| Language and build | TypeScript + Vite                       | Fast dev server; builds to plain static files                |
+| Body tracking      | MediaPipe Pose Landmarker for the web   | Free, Apache-2.0, runs in the browser, tracks several people |
+| Games              | Phaser                                  | Scenes, sprites, sound and animation built in                |
+| Hosting            | GitHub Pages, installable web app (PWA) | Free; one link; works offline after first visit              |
+| Storage            | Browser local storage                   | Settings and stars never leave the device                    |
 
 No backend, no accounts.
 
@@ -94,14 +94,14 @@ Each game folder holds a short manifest (name, age range, players, movement, int
 
 Target: under 100 ms from a kid's real movement to the picture on the TV; 120 ms is a hard limit. (A full-body mirror study found movement accuracy worsened between 75 and 125 ms of delay, and the sense of control faded past 125 ms.)
 
-| Stage | Budget | How we hit it |
-| --- | --- | --- |
-| Camera to browser | ≤ 45 ms | Request 60 fps at 640×480; bright room keeps exposure short |
-| Pose tracking | ≤ 20 ms for two kids | Lite model on the GPU, one pass per new camera frame; each extra kid adds roughly one more pass |
-| Motion kit | ≤ 2 ms | Light smoothing; events fire at the start of a move |
-| Game + drawing | ≤ 17 ms | Hold 60 fps; drawing never waits for tracking |
-| TV | ≤ 15 ms | Game Mode on |
-| Total | ≤ 100 ms | Measured on the real TV in M0, not assumed |
+| Stage             | Budget               | How we hit it                                                                                   |
+| ----------------- | -------------------- | ----------------------------------------------------------------------------------------------- |
+| Camera to browser | ≤ 45 ms              | Request 60 fps at 640×480; bright room keeps exposure short                                     |
+| Pose tracking     | ≤ 20 ms for two kids | Lite model on the GPU, one pass per new camera frame; each extra kid adds roughly one more pass |
+| Motion kit        | ≤ 2 ms               | Light smoothing; events fire at the start of a move                                             |
+| Game + drawing    | ≤ 17 ms              | Hold 60 fps; drawing never waits for tracking                                                   |
+| TV                | ≤ 15 ms              | Game Mode on                                                                                    |
+| Total             | ≤ 100 ms             | Measured on the real TV in M0, not assumed                                                      |
 
 Low-lag settings, checked once per TV:
 
@@ -136,15 +136,15 @@ Turns 33 tracked body points per kid into a few simple events. No game reads raw
 4. Assign players: two colored floor circles, ~4 ft apart, match the two halves of the screen. Whoever stands in a circle is that player. No face recognition.
 5. Detect: emit the events below.
 
-| Event | Fires when (defaults; each kid's warm-up replaces them) | Used by |
-| --- | --- | --- |
-| moving / still | Total body motion above / below a threshold for 0.5 s | Freeze Dance |
-| step | A knee starts rising, alternating left/right (fires at start of lift); arm pumps also count for small kids | Critter Dash |
-| jump | Hips shoot upward at takeoff (fires immediately); cancelled if they don't rise ~15% of body length | Critter Dash, Bubble Pop |
-| squat | Hips drop below 75% of standing hip height | Bubble Pop |
-| hand / foot position | Wrist and ankle points, smoothed, every frame | Bubble Pop, menus |
-| arms up | Both wrists above the head | Menus ("arms up to play again") |
-| left the frame | Key points missing > 1 s | Pauses only that kid |
+| Event                | Fires when (defaults; each kid's warm-up replaces them)                                                    | Used by                         |
+| -------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| moving / still       | Total body motion above / below a threshold for 0.5 s                                                      | Freeze Dance                    |
+| step                 | A knee starts rising, alternating left/right (fires at start of lift); arm pumps also count for small kids | Critter Dash                    |
+| jump                 | Hips shoot upward at takeoff (fires immediately); cancelled if they don't rise ~15% of body length         | Critter Dash, Bubble Pop        |
+| squat                | Hips drop below 75% of standing hip height                                                                 | Bubble Pop                      |
+| hand / foot position | Wrist and ankle points, smoothed, every frame                                                              | Bubble Pop, menus               |
+| arms up              | Both wrists above the head                                                                                 | Menus ("arms up to play again") |
+| left the frame       | Key points missing > 1 s                                                                                   | Pauses only that kid            |
 
 Every event has a keyboard or mouse stand-in so each game is playable at a desk.
 
@@ -185,13 +185,13 @@ Benefit of the doubt — when tracking is unsure, the kid wins:
 
 Start-up check: before each round, each circle shows the kid's buddy and turns green once the kid is seen head to ankles for 1 s. Problems get a spoken fix:
 
-| What the app detects | What the buddy says |
-| --- | --- |
-| Head or feet out of frame | "Step back a little so I can see your feet!" |
-| Body taller than the frame | "Whoa, too close! Take two big steps back." |
-| Dark picture | "It's a bit dark. Can a grown-up turn on a light?" |
+| What the app detects       | What the buddy says                                        |
+| -------------------------- | ---------------------------------------------------------- |
+| Head or feet out of frame  | "Step back a little so I can see your feet!"               |
+| Body taller than the frame | "Whoa, too close! Take two big steps back."                |
+| Dark picture               | "It's a bit dark. Can a grown-up turn on a light?"         |
 | Bright area behind the kid | "Something bright is behind you. Let's close the curtain." |
-| Two bodies in one circle | "One buddy per circle!" |
+| Two bodies in one circle   | "One buddy per circle!"                                    |
 
 Passing bar (recorded clips + playtests):
 
@@ -204,15 +204,15 @@ Passing bar (recorded clips + playtests):
 
 Each kid's first session starts with a 30-second warm-up that doubles as calibration. Both kids do it side by side to music, copying their buddies.
 
-| Move | The buddy says | What it measures | What it tunes |
-| --- | --- | --- | --- |
-| Stand tall, 2 s | "Stand tall like a tree!" | Height, body size, standing hip height | All distances; squat and jump baselines |
-| Statue, 3 s | "Freeze like a statue!" | Wobble while trying to hold still | Freeze Dance "still" line, set just above their wobble |
-| Reach up, 2 s | "Reach for the sky!" | Highest hand reach | How high bubbles float in Bubble Pop |
-| Arms out, 2 s | "Be an airplane!" | Arm span; whether arms reach the other circle | Touch margins, bubble spread, "scoot apart" warning |
-| Frog squats, 2 | "Squat like a frog!" | Squat depth | Squat line |
-| Bunny hops, 3 (Big mode: jumping jacks) | "Hop, hop, hop!" | Jump height and takeoff speed | Jump line, set at half their own hop |
-| Run in place, 5 s | "Run, run, run!" | Natural step rate and knee lift | Step line; Critter Dash top speed at their own fast pace |
+| Move                                    | The buddy says            | What it measures                              | What it tunes                                            |
+| --------------------------------------- | ------------------------- | --------------------------------------------- | -------------------------------------------------------- |
+| Stand tall, 2 s                         | "Stand tall like a tree!" | Height, body size, standing hip height        | All distances; squat and jump baselines                  |
+| Statue, 3 s                             | "Freeze like a statue!"   | Wobble while trying to hold still             | Freeze Dance "still" line, set just above their wobble   |
+| Reach up, 2 s                           | "Reach for the sky!"      | Highest hand reach                            | How high bubbles float in Bubble Pop                     |
+| Arms out, 2 s                           | "Be an airplane!"         | Arm span; whether arms reach the other circle | Touch margins, bubble spread, "scoot apart" warning      |
+| Frog squats, 2                          | "Squat like a frog!"      | Squat depth                                   | Squat line                                               |
+| Bunny hops, 3 (Big mode: jumping jacks) | "Hop, hop, hop!"          | Jump height and takeoff speed                 | Jump line, set at half their own hop                     |
+| Run in place, 5 s                       | "Run, run, run!"          | Natural step rate and knee lift               | Step line; Critter Dash top speed at their own fast pace |
 
 - Saved to the kid's profile. Parents can re-run it; the app suggests a redo every 3 months.
 - A move not picked up after 2 tries is demonstrated again more slowly; then skipped, using the age-mode default.
@@ -227,12 +227,12 @@ Visual comfort:
 - Slow, eased motion, big rounded shapes, one focal point at a time
 - Voice prompts and picture demos instead of text
 
-| Setting | Little (3–5) | Big (6–10) |
-| --- | --- | --- |
-| Losing | Never; every round ends in a celebration | Scores, stars, gentle challenge |
-| Speed | Slow, long reaction windows | Speeds up as they improve |
-| Instructions | Voice + picture demo | Voice + short text |
-| Round length | 1–2 min | 2–3 min |
+| Setting      | Little (3–5)                             | Big (6–10)                      |
+| ------------ | ---------------------------------------- | ------------------------------- |
+| Losing       | Never; every round ends in a celebration | Scores, stars, gentle challenge |
+| Speed        | Slow, long reaction windows              | Speeds up as they improve       |
+| Instructions | Voice + picture demo                     | Voice + short text              |
+| Round length | 1–2 min                                  | 2–3 min                         |
 
 Safety: kids run in place on their own spot. Each session starts with a clear-space check and ends with a 1-minute cool-down stretch.
 
@@ -240,17 +240,17 @@ Privacy: camera frames are processed in memory and discarded. Nothing is recorde
 
 ## What makes it fun
 
-| Rule | What it means | Playtest check |
-| --- | --- | --- |
-| First win within 10 s | Each round opens with an easy success | Every kid scores within 10 s of "go" |
-| Instant, big feedback | Every hit gets sound + color burst + buddy reaction in the same frame | No move goes without a visible response |
-| Something new every 20–30 s | Special bubble, pose card, obstacle or music change | Kids still moving at the end of the round |
-| Short rounds, instant replay | Rounds 1–2 min; "arms up" restarts in < 3 s | Kids ask to go again in ≥ 2 of 3 sessions |
-| Each kid at their own level | 3 wins in a row steps difficulty up; 2 misses in a row steps it down | No kid wins, or loses, every round |
-| Mistakes are funny | Wobbles and misses trigger silly buddy reactions, never a buzzer | No tears, no "I quit" |
-| Play together | Co-op moments in every game (team freeze bonus, shared bubble jar) | Siblings cheer each other once a round |
-| Something to earn | Stars unlock buddy hats, critter colors, new tracks | Kids name something they want to unlock |
-| Grown-ups can play | Grown-up profile handicap (more steps per stride, smaller bubbles) | A parent loses at least some of the time |
+| Rule                         | What it means                                                         | Playtest check                            |
+| ---------------------------- | --------------------------------------------------------------------- | ----------------------------------------- |
+| First win within 10 s        | Each round opens with an easy success                                 | Every kid scores within 10 s of "go"      |
+| Instant, big feedback        | Every hit gets sound + color burst + buddy reaction in the same frame | No move goes without a visible response   |
+| Something new every 20–30 s  | Special bubble, pose card, obstacle or music change                   | Kids still moving at the end of the round |
+| Short rounds, instant replay | Rounds 1–2 min; "arms up" restarts in < 3 s                           | Kids ask to go again in ≥ 2 of 3 sessions |
+| Each kid at their own level  | 3 wins in a row steps difficulty up; 2 misses in a row steps it down  | No kid wins, or loses, every round        |
+| Mistakes are funny           | Wobbles and misses trigger silly buddy reactions, never a buzzer      | No tears, no "I quit"                     |
+| Play together                | Co-op moments in every game (team freeze bonus, shared bubble jar)    | Siblings cheer each other once a round    |
+| Something to earn            | Stars unlock buddy hats, critter colors, new tracks                   | Kids name something they want to unlock   |
+| Grown-ups can play           | Grown-up profile handicap (more steps per stride, smaller bubbles)    | A parent loses at least some of the time  |
 
 Underneath all of it: the camera must feel like it sees you — at most one "it didn't see me!" per round.
 
@@ -278,17 +278,17 @@ How it talks:
 - Praise the move ("What a high jump!"); never "wrong" or "you lose."
 - Captions at the bottom; separate voice volume in parent settings.
 
-| Moment | Example lines |
-| --- | --- |
-| Arriving | "Hi! Step into your circle!" · "I see you, Blue!" |
-| Warm-up | "Stand tall like a tree!" · "Freeze like a statue!" · "Run, run, run!" |
-| Picking a game | "Hold your hand on a game!" · "Arms up to play again!" |
-| Freeze Dance | "Dance, dance, dance!" · "Freeze!" · "Wobbly! Shake off the snow!" |
-| Critter Dash | "Three, two, one, go!" · "Jump the log!" · "Photo finish!" |
-| Bubble Pop | "Pop the bubbles!" · "Reach up high!" · "Golden bubble, both hands!" |
-| Together | "Blue and Pink, freeze together!" · "Team snowstorm!" |
-| Tracking help | Start-up check lines |
-| Wrapping up | "Two more minutes!" · "Cool-down stretch time." · "Great moving today!" |
+| Moment         | Example lines                                                           |
+| -------------- | ----------------------------------------------------------------------- |
+| Arriving       | "Hi! Step into your circle!" · "I see you, Blue!"                       |
+| Warm-up        | "Stand tall like a tree!" · "Freeze like a statue!" · "Run, run, run!"  |
+| Picking a game | "Hold your hand on a game!" · "Arms up to play again!"                  |
+| Freeze Dance   | "Dance, dance, dance!" · "Freeze!" · "Wobbly! Shake off the snow!"      |
+| Critter Dash   | "Three, two, one, go!" · "Jump the log!" · "Photo finish!"              |
+| Bubble Pop     | "Pop the bubbles!" · "Reach up high!" · "Golden bubble, both hands!"    |
+| Together       | "Blue and Pink, freeze together!" · "Team snowstorm!"                   |
+| Tracking help  | Start-up check lines                                                    |
+| Wrapping up    | "Two more minutes!" · "Cool-down stretch time." · "Great moving today!" |
 
 Each game opens with a 10-second spoken intro while buddies demonstrate, then an easy first win. Spanish is the planned second language. Later idea: a grown-up voice pack recorded by a parent, stored on the device.
 
@@ -302,12 +302,12 @@ Kids dance while music plays and freeze when it stops. First game to build: need
 4. Holding still turns the buddy into a sparkly ice statue. A wobble makes the buddy giggle and shake off snow (funny, not a failure).
 5. After 3–5 s the music returns. A round = 6–8 freezes, ~2 min.
 
-| Setting | Little (3–5) | Big (6–10) |
-| --- | --- | --- |
-| Music between freezes | 4–8 s, steady | 3–10 s, less predictable |
-| Grace window | 1.0 s | 0.5 s |
-| Wobble allowed | Generous | Tight |
-| Result | Every freeze earns a star | Points for fast, still freezes; optional "out" rule |
+| Setting               | Little (3–5)              | Big (6–10)                                          |
+| --------------------- | ------------------------- | --------------------------------------------------- |
+| Music between freezes | 4–8 s, steady             | 3–10 s, less predictable                            |
+| Grace window          | 1.0 s                     | 0.5 s                                               |
+| Wobble allowed        | Generous                  | Tight                                               |
+| Result                | Every freeze earns a star | Points for fast, still freezes; optional "out" rule |
 
 - Big-kid twist: "Freeze like a…" picture cards (star, flamingo, tree, rocket) give bonus points for matching the pose.
 - Fun hooks: silly frozen poses; snowstorm bonus when every player freezes at once; every third round plays a slow-motion dance song.
@@ -326,12 +326,12 @@ Kids run in place to race an animal across a gentle side-scrolling track.
 4. Big mode: logs and puddles roll in; jump to hop them. A miss only slows the critter briefly; it never stops.
 5. Everyone finishes to confetti. Places shown only in Big mode.
 
-| Setting | Little (3–5) | Big (6–10) |
-| --- | --- | --- |
-| Race length | ~30 s | 45–60 s |
-| Obstacles | None | Logs and puddles |
-| Solo opponent | Friendly snail that waits | Rabbit pacer, or ghost of your best run |
-| Places | Hidden; all finishers celebrated | 1st, 2nd shown |
+| Setting       | Little (3–5)                     | Big (6–10)                              |
+| ------------- | -------------------------------- | --------------------------------------- |
+| Race length   | ~30 s                            | 45–60 s                                 |
+| Obstacles     | None                             | Logs and puddles                        |
+| Solo opponent | Friendly snail that waits        | Rabbit pacer, or ghost of your best run |
+| Places        | Hidden; all finishers celebrated | 1st, 2nd shown                          |
 
 - Mixed ages: speed is relative to each kid's own calibration, plus gentle catch-up.
 - Tracks: Snowy Meadow first; Autumn Forest and Beach Boardwalk unlock with stars.
@@ -350,11 +350,11 @@ Adds reaching, stretching and squatting; a 3-year-old can play with no instructi
 4. Two players: each kid's half gets bubbles in their color; rainbow bubbles drift up the middle for either kid.
 5. After 90 s the last bubbles float away and the pop count rises in a big friendly number.
 
-| Setting | Little (3–5) | Big (6–10) |
-| --- | --- | --- |
-| Bubbles | Huge and slow; extra-generous touch area | Smaller, faster, more specials |
-| Misses | Never counted | Escaped bubbles cost a point |
-| Learning rounds | Pop the color the voice calls | Numbers in order, count by 2s, spell your name |
+| Setting         | Little (3–5)                             | Big (6–10)                                     |
+| --------------- | ---------------------------------------- | ---------------------------------------------- |
+| Bubbles         | Huge and slow; extra-generous touch area | Smaller, faster, more specials                 |
+| Misses          | Never counted                            | Escaped bubbles cost a point                   |
+| Learning rounds | Pop the color the voice calls            | Numbers in order, count by 2s, spell your name |
 
 - Fun hooks: pops play "Twinkle, Twinkle, Little Star" (public domain) note by note; five quick pops → rainbow burst; golden bubble showers mini-bubbles.
 - Detection: hand and foot positions, jump and squat. A touch counts inside the bubble plus a margin (full hand-width Little, half Big), checked along the hand's path between frames.
@@ -389,27 +389,27 @@ Adds reaching, stretching and squatting; a 3-year-old can play with no instructi
 
 A phase is done when its gate passes, not on a date. Each game's voice lines ship with the game.
 
-| Phase | Scope | Gate |
-| --- | --- | --- |
-| M0 Foundation | Repo, CI, Pages; 2-kid tracking; lag meter overlay; pose recorder | Motion-to-TV lag under 100 ms |
-| M1 Freeze Dance | Motion kit v1; warm-up check; 2 players at once; kid playtest | Kids ask to play it again |
-| M2 Critter Dash | Steps and jumps; two-lane race; pacer critter; kid playtest | Steps register for a 3-year-old |
-| M3 Bubble Pop | Hand + foot pops; launcher; parent settings; session timer | All 3 games from one launcher |
-| M4 v1.0 release | Art + music pass; comfort review; README + GIF; public launch | — |
+| Phase           | Scope                                                             | Gate                            |
+| --------------- | ----------------------------------------------------------------- | ------------------------------- |
+| M0 Foundation   | Repo, CI, Pages; 2-kid tracking; lag meter overlay; pose recorder | Motion-to-TV lag under 100 ms   |
+| M1 Freeze Dance | Motion kit v1; warm-up check; 2 players at once; kid playtest     | Kids ask to play it again       |
+| M2 Critter Dash | Steps and jumps; two-lane race; pacer critter; kid playtest       | Steps register for a 3-year-old |
+| M3 Bubble Pop   | Hand + foot pops; launcher; parent settings; session timer        | All 3 games from one launcher   |
+| M4 v1.0 release | Art + music pass; comfort review; README + GIF; public launch     | —                               |
 
 After v1.0: Animal Moves (copy the animal's pose), Snow Catcher, Simon Says.
 
 ## Risks
 
-| Risk | Mitigation |
-| --- | --- |
-| Lag from camera, laptop or TV | Lag budget, low-lag checklist, slow-motion test at every gate |
-| Tracking less precise on 3–5-year-olds | Warm-up calibration, generous touch areas, benefit-of-the-doubt rules, real-kid clips |
-| Kids overlapping | Taped circles ~4 ft apart; players follow circles; "One buddy per circle!" pause; 3 players only after v1 |
-| Laptop webcam too narrow | "Step back" guide; recommend wide-angle webcam |
-| Slow computers | Lite model; smaller camera input; low-detail mode |
-| Running near furniture | Clear-space check; critters pause when a kid leaves their spot |
-| Asset licensing | CC0 or self-made only, tracked in ASSETS.md |
+| Risk                                   | Mitigation                                                                                                |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Lag from camera, laptop or TV          | Lag budget, low-lag checklist, slow-motion test at every gate                                             |
+| Tracking less precise on 3–5-year-olds | Warm-up calibration, generous touch areas, benefit-of-the-doubt rules, real-kid clips                     |
+| Kids overlapping                       | Taped circles ~4 ft apart; players follow circles; "One buddy per circle!" pause; 3 players only after v1 |
+| Laptop webcam too narrow               | "Step back" guide; recommend wide-angle webcam                                                            |
+| Slow computers                         | Lite model; smaller camera input; low-detail mode                                                         |
+| Running near furniture                 | Clear-space check; critters pause when a kid leaves their spot                                            |
+| Asset licensing                        | CC0 or self-made only, tracked in ASSETS.md                                                               |
 
 ## Sources
 

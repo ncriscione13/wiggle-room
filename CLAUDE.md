@@ -68,7 +68,7 @@ export interface GameManifest {
 
 export interface PlayerInfo {
   slot: Slot;
-  color: string;          // theme token name
+  color: string; // theme token name
   name?: string;
   mode: AgeMode;
   calibration: Calibration;
@@ -76,9 +76,9 @@ export interface PlayerInfo {
 
 export interface GameContext {
   players: PlayerInfo[];
-  motion: MotionEvents;    // on('jump'|'step'|'squat'|'still'|'moving'|'armsUp', handler), pose(slot) for drawing, tracking(slot)
-  voice: Narrator;         // say(lineId, { player? })
-  audio: AudioBus;         // music, sfx, ducking, measured output delay
+  motion: MotionEvents; // on('jump'|'step'|'squat'|'still'|'moving'|'armsUp', handler), pose(slot) for drawing, tracking(slot)
+  voice: Narrator; // say(lineId, { player? })
+  audio: AudioBus; // music, sfx, ducking, measured output delay
   theme: Theme;
   difficulty(slot: Slot): DifficultyLevel; // 3 wins in a row → up, 2 misses → down
   finish(result: RoundResult): void;

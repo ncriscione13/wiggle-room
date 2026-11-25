@@ -10,14 +10,24 @@
   },
   "scripts": {
     "dev": "vite",
+    "dev:lan": "vite --mode lan",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "lint": "eslint . --max-warnings 0 && prettier --check .",
+    "format": "prettier --write .",
+    "typecheck": "tsc -b",
+    "e2e": "playwright test",
+    "bench": "node tools/bench/run.ts",
+    "voice": "node tools/voice-gen/run.ts",
+    "check": "npm run typecheck && npm run lint && npm run test && npm run build && npm run e2e"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "1.2.3",
     "phaser": "4.2.1"
   },
   "devDependencies": {
+    "@eslint/js": "10.0.1",
     "@playwright/test": "1.65.1",
     "@types/node": "26.6.10",
     "@vitejs/plugin-basic-ssl": "2.3.0",

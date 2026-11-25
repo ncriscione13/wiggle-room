@@ -2,6 +2,23 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-25 — 0.2 — Scripts, placeholders, @eslint/js
+
+- **`bench` and `voice` are honest placeholders**: they print which task delivers them
+  (M1.1 / M1.6) and exit 1, so nobody mistakes "ran" for "passed". They are not part of
+  `check`.
+- **`@eslint/js` added as a dev dependency** (exact-pinned 10.0.1): ESLint 10 moved its
+  recommended ruleset into this separate first-party package and no longer ships it. It is
+  ESLint-team-owned plumbing for the "eslint" dependency PLAN 0.1 names, not a new library;
+  flagged in the Phase 0 report.
+- **Lint strictness**: typescript-eslint `strictTypeChecked` on all TS files with
+  `--max-warnings 0`, plus `prettier --check` inside `npm run lint`. Guardrail rules land
+  in 0.3.
+- **`npm run e2e` requires a prior build** (Playwright serves `vite preview`); `check` runs
+  build before e2e, so the gate always tests the production bundle.
+- **Prettier formats markdown too**: PLAN.md/DESIGN.md got reformatted once by
+  `npm run format`; content unchanged.
+
 ## 2026-11-25 — 0.1 — Version pins and scaffold choices
 
 - **Exact version pins** (no ranges; the lockfile is committed): vite 8.3.8, typescript 6.0.3,
