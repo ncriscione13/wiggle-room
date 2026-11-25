@@ -178,3 +178,52 @@ Gate: all three games playable from one launcher; playtest passes the fun checks
 ## Phase reports
 
 (Claude Code adds one report per phase here: what was built, test counts, bench numbers, known gaps, and what I need to test on the TV.)
+
+### Phase 0 report — 2026-11-25
+
+**What was built.** The fully guarded empty project: Vite 8 + strict TypeScript 6 toolchain
+with exact version pins; the fail-fast `npm run check` gate (typecheck → lint → test →
+build → e2e); eight guardrail lint rules proven by tests that run the shipped config
+against virtual files (layering, colors-only-in-theme, no speechSynthesis, no network, no
+`any`, MediaPipe only in tracking, motion never runtime-imports games); the pastel theme
+with executable comfort rules; `src/motion/config.ts` with every DESIGN threshold as a
+unit-suffixed constant (safety invariants pinned by tests, tunables structurally checked);
+the game contract types; offline assets (model fetcher with validation, wasm postinstall,
+~35 MB PWA precache); the canonical clip format + a deterministic synthetic clip generator
+(9 clips, physics pinned: exactly 5 jumps, 3 squats, 20/29 steps, crossing arms with hips
+never crossing the midline); the test harness (clip runner, fake camera, `?source=replay`
+mode); CI on every push + Pages deploy from main; README/LICENSE/ASSETS docs. A fresh-eyes
+review agent audited the phase; all 11 findings were fixed or logged (two IMPORTANT: Node
+engines floor, PWA manifest shipping a pure-white splash — both fixed, see DECISIONS.md).
+
+**Test counts.** 118 unit tests in 13 files (incl. 24 lint-guardrail cases and 18 clip
+physics checks) + 8 Playwright browser tests. `npm run check` green locally and in CI.
+
+**Bench numbers.** None yet — `npm run bench` is an honest placeholder until M1.1 builds
+the motion kit (the budget constants it will be held to are already pinned:
+avg < 1 ms, p99 < 2 ms per frame).
+
+**Known gaps (all scheduled, none hidden).** `bench`/`voice` are exit-1 placeholders
+(M1.1/M1.6); replay mode loads clips but only feeds a badge until the PoseSource pipeline
+lands (M0.2); clips are served by dev/preview middleware only, never shipped; the
+service-worker `autoUpdate` strategy must be revisited when M3 introduces lazy game chunks
+(logged with a plan); the model URL uses MediaPipe's `latest` path (CI caches it under a
+pinned key).
+
+**What Nick needs to test (no TV lag work yet — that's M0):**
+
+1. On the TV computer, open https://ncriscione13.github.io/wiggle-room/ in Chrome,
+   full screen. You should see the pastel night-blue "Wiggle Room" start screen with two
+   floating player circles — and never a white flash, including while loading.
+2. Install it as an app (the install icon in Chrome's address bar), close Chrome, turn
+   off Wi-Fi/unplug ethernet, and launch the installed app. It should open fully, offline,
+   with a night-blue (not white) splash.
+3. Optional dev check on your machine: `git pull`, `npm install`, `npm run fetch-models`,
+   `npm run check` — should end green; then `npm run dev` and visit
+   `http://localhost:5173/?source=replay&clip=jumps-x5` — a badge bottom-left should say
+   the clip loaded (480 frames, 16.0 s).
+4. Prep for M0 (from your PLAN task list, not software): tape the two floor circles
+   ~4 ft apart, 7–9 ft from the laptop; TV in Game Mode, motion smoothing off, laptop
+   display set to TV only at 1080p/60.
+
+**Stopped and waiting** for your results before starting Phase M0.
