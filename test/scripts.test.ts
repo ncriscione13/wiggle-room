@@ -23,8 +23,13 @@ describe('npm scripts (task 0.2)', () => {
     'bench',
     'voice',
     'check',
+    'fetch-models',
   ])('defines "%s"', (name) => {
     expect(scripts[name], `missing npm script "${name}"`).toBeTruthy();
+  });
+
+  it('postinstall keeps public/mediapipe in sync with node_modules (task 0.5)', () => {
+    expect(scripts['postinstall']).toContain('copy-mediapipe-wasm');
   });
 
   it('check = typecheck → lint → test → build → e2e, fail-fast (&&)', () => {

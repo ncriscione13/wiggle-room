@@ -35,7 +35,7 @@ Goal: an empty but fully guarded project. Every later task gets checked automati
   - No `fetch`/`XMLHttpRequest`/`WebSocket` in `src/` except the local asset loader
   - No `any`
 - [x] 0.4 Folder skeleton from DESIGN.md with typed stubs: `src/games/types.ts` (game contract from CLAUDE.md), `src/motion/config.ts` (all default thresholds from DESIGN.md as named constants with units), `src/ui/theme.ts` (pastel palette, two player colors, typography).
-- [ ] 0.5 Offline assets: `npm run fetch-models` downloads `pose_landmarker_lite.task` into `public/models/`, and a postinstall step copies the MediaPipe wasm files into `public/mediapipe/`. The app loads only these local copies. (Model URL as of writing: `https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task`. Check the MediaPipe Pose Landmarker docs if it has moved.)
+- [x] 0.5 Offline assets: `npm run fetch-models` downloads `pose_landmarker_lite.task` into `public/models/`, and a postinstall step copies the MediaPipe wasm files into `public/mediapipe/`. The app loads only these local copies. (Model URL as of writing: `https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task`. Check the MediaPipe Pose Landmarker docs if it has moved.)
 - [ ] 0.6 Synthetic clip generator (`tools/clip-synth`): produces landmark sequences in the same JSON format the pose recorder will use, with realistic jitter and occasional dropped points:
   - Kid standing still for 30 s
   - 5 jumps

@@ -2,6 +2,21 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-25 — 0.5 — Offline assets
+
+- **The live `pose_landmarker_lite.task` (5,777,746 bytes) starts with 2 zero bytes before
+  the zip "PK" magic.** The validator scans the first 8 bytes for the magic instead of
+  requiring offset 0; a test pins the observed layout.
+- **Model and wasm are gitignored, restored by tooling**: `npm run fetch-models`
+  (idempotent, validates, `--force` to re-download) and the postinstall wasm copy. CI runs
+  both (0.8), so clones and CI never depend on committed binaries.
+- **Both MediaPipe 1.2.3 wasm variants are copied** (`vision_wasm_internal` and
+  `vision_wasm_module_internal`, ~14.7 MB each): FilesetResolver picks at runtime.
+  Offline precache is ~35 MB total (model + wasm) — deliberate, it's the whole point of
+  the PWA; `maximumFileSizeToCacheInBytes` raised to 20 MB.
+- **`src/assets/paths.ts`** is the single source of asset URLs, BASE_URL-aware so one
+  build works at `/` and `/wiggle-room/`.
+
 ## 2026-11-25 — 0.4 — Skeleton, stubs, start screen
 
 - **Config test strategy**: hard safety/comfort/tracking invariants (visibility 0.5,

@@ -31,9 +31,10 @@ export default defineConfig(({ mode }) => ({
             },
             workbox: {
               // Precache everything the app needs offline, including the pose model
-              // (~5.5 MB .task) and the MediaPipe wasm, so first visit = installed.
+              // (~5.5 MB .task) and the MediaPipe wasm (two ~14.7 MB .wasm files),
+              // so first visit = fully installed. ~35 MB once, on purpose.
               globPatterns: ['**/*.{js,css,html,svg,png,webp,ico,wasm,task,json,mp3,ogg,woff2}'],
-              maximumFileSizeToCacheInBytes: 12 * 1024 * 1024,
+              maximumFileSizeToCacheInBytes: 20 * 1024 * 1024,
             },
           }),
         ],
