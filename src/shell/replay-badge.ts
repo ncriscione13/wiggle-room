@@ -1,11 +1,14 @@
-// Replay badge (task 0.7): visible proof that replay mode is active and the
-// clip loaded. M0.2 wires the loaded clip into the ReplayPoseSource; until
-// then the badge is the user-facing surface of `?source=replay`.
+// Replay badge (0.7/M0.3): loads the clip, reports ready/error, and hands the
+// clip back to the caller so the stage can play it.
 
 import { loadClipJson } from '../assets/loader';
+import type { ClipFile } from '../tracking/clip-format';
 import { colors, px, typography } from '../ui/theme';
 
-export async function mountReplayBadge(root: HTMLElement, clipName: string): Promise<void> {
+export async function mountReplayBadge(
+  root: HTMLElement,
+  clipName: string,
+): Promise<ClipFile | null> {
   const badge = document.createElement('div');
   badge.setAttribute('data-testid', 'replay-badge');
   badge.dataset['state'] = 'loading';
@@ -13,6 +16,7 @@ export async function mountReplayBadge(root: HTMLElement, clipName: string): Pro
     position: 'fixed',
     bottom: px(16),
     left: px(16),
+    zIndex: '10',
     padding: `${px(8)} ${px(14)}`,
     borderRadius: px(12),
     background: colors.surfaceRaised,
@@ -30,8 +34,10 @@ export async function mountReplayBadge(root: HTMLElement, clipName: string): Pro
     const durationS = first !== undefined && last !== undefined ? last.tS - first.tS : 0;
     badge.textContent = `Replay: ${clip.name} — ${String(clip.frames.length)} frames, ${durationS.toFixed(1)} s`;
     badge.dataset['state'] = 'ready';
+    return clip;
   } catch {
     badge.textContent = `Replay clip "${clipName}" could not be loaded.`;
     badge.dataset['state'] = 'error';
+    return null;
   }
 }

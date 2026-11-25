@@ -67,7 +67,7 @@ Goal: two kids tracked live, fast enough, with tools to measure it.
 - [x] M0.2 `PoseSource` interface with:
   - `LivePoseSource`: MediaPipe lite, GPU delegate, VIDEO mode, `numPoses: 2`, exactly one `detectForVideo` per new frame via `requestVideoFrameCallback`, monotonic timestamps
   - `ReplayPoseSource`: plays clips with their original timing
-- [ ] M0.3 Phaser app at 60 fps drawing the latest pose. Rendering never waits for tracking. Test: replay at 2× speed, and drawing still holds 60 fps in Playwright traces.
+- [x] M0.3 Phaser app at 60 fps drawing the latest pose. Rendering never waits for tracking. Test: replay at 2× speed, and drawing still holds 60 fps in Playwright traces.
 - [ ] M0.4 Debug overlay (toggle with D): skeletons in player colors, both floor circles, per-stage ms (camera frame interval, inference, motion kit, render), fps, last 10 events.
 - [ ] M0.5 Pose recorder (dev only, R to start/stop): saves landmarks + timestamps as JSON (never video). Clips can be loaded into the replay source by drag-and-drop or `?clip=`.
 - [ ] M0.6 Device check on first run: a 5-second benchmark stores two-kid tracking ms. Above 20 ms, the app reduces input size first, then shows a parent-facing warning.

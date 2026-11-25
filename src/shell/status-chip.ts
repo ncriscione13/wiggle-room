@@ -11,6 +11,7 @@ export function mountStatusChip(root: HTMLElement, testid: string, text: string)
     position: 'fixed',
     bottom: px(16),
     right: px(16),
+    zIndex: '10',
     padding: `${px(8)} ${px(14)}`,
     borderRadius: px(12),
     background: colors.surfaceRaised,

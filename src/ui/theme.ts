@@ -73,3 +73,8 @@ export function cssRgb(hex: string): string {
 export function px(n: number): string {
   return `${String(n)}px`;
 }
+
+/** Hex token -> Phaser numeric color (0xRRGGBB). */
+export function phaserColor(hex: string): number {
+  return parseInt(hex.slice(1), 16);
+}

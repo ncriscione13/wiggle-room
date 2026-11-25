@@ -2,6 +2,25 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-25 — M0.3 — Phaser stage + the fps measurement lesson
+
+- **The fps acceptance test first failed at 46 fps — and the app was innocent.** Solo
+  measurements: 60.4 fps headless default, 60.4 with GPU, 60.0 headed, two-kid clip at
+  2×. The dip came from running the measurement in parallel with three other browser
+  instances, one of them doing MediaPipe wasm CPU inference. Fix: a `perf` Playwright
+  project that depends on the functional suite and runs after it, alone. The >55 fps
+  threshold stands unweakened. Lesson for M1's bench: perf numbers need an idle machine.
+- **Stage renders pull-style**: `update()` reads `source.latest()`; no awaits, no frame
+  coupling (rule 2). Phaser 4.2.1's Scene/Graphics/Scale APIs verified against its own
+  types before use — no Phaser 3 fallback needed.
+- **Mirroring lives in `stage-math.ts`** (x → 1−x at draw time, unit-tested); landmarks
+  stay raw everywhere else. Low-visibility points (< VISIBILITY_MIN_RATIO) aren't drawn.
+- **Design resolution 1920×1080** (FIT-scaled); head drawn as a dot at the nose (no face
+  edges). Floor circles are a debug aid at fixed quarter positions until M1.2 binds the
+  real taped circles.
+- **replay-badge now returns the loaded ClipFile** so the app feeds it to the stage; the
+  badge's e2e-visible behavior (testid, states) is unchanged.
+
 ## 2026-11-25 — M0.2b — LivePoseSource
 
 - **The next `requestVideoFrameCallback` is registered only after a frame is fully

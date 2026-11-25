@@ -70,6 +70,32 @@ export const POSE = {
 
 export type PoseLandmarkName = keyof typeof POSE;
 
+/**
+ * Body-only skeleton topology for drawing (head is rendered as a dot at the
+ * nose, not with face edges). Used by the stage, the debug overlay and the
+ * recorder preview.
+ */
+export const POSE_CONNECTIONS: readonly [number, number][] = [
+  [POSE.leftShoulder, POSE.rightShoulder],
+  [POSE.leftShoulder, POSE.leftHip],
+  [POSE.rightShoulder, POSE.rightHip],
+  [POSE.leftHip, POSE.rightHip],
+  [POSE.leftShoulder, POSE.leftElbow],
+  [POSE.leftElbow, POSE.leftWrist],
+  [POSE.rightShoulder, POSE.rightElbow],
+  [POSE.rightElbow, POSE.rightWrist],
+  [POSE.leftHip, POSE.leftKnee],
+  [POSE.leftKnee, POSE.leftAnkle],
+  [POSE.rightHip, POSE.rightKnee],
+  [POSE.rightKnee, POSE.rightAnkle],
+  [POSE.leftAnkle, POSE.leftHeel],
+  [POSE.leftHeel, POSE.leftFootIndex],
+  [POSE.leftAnkle, POSE.leftFootIndex],
+  [POSE.rightAnkle, POSE.rightHeel],
+  [POSE.rightHeel, POSE.rightFootIndex],
+  [POSE.rightAnkle, POSE.rightFootIndex],
+];
+
 /** Returns a list of problems; empty = valid. Checks structure, not physics.
  * The input is typically parsed JSON, so runtime values may violate the type. */
 export function validateClipFile(clip: ClipFile): string[] {

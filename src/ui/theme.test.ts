@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { colors, cssRgb, hexToRgb, playerColors, typography } from './theme';
+import { colors, cssRgb, hexToRgb, phaserColor, playerColors, typography } from './theme';
 
 // Task 0.4: the palette itself must obey the DESIGN.md comfort rules
 // ("muted pastel palette on soft mid-tone backgrounds; no pure white screens
@@ -60,5 +60,13 @@ describe('theme helpers', () => {
     expect(typography.family).toContain('system-ui');
     expect(typography.titlePx).toBeGreaterThanOrEqual(64);
     expect(typography.bodyPx).toBeGreaterThanOrEqual(20);
+  });
+
+  it('phaserColor converts tokens to numeric 0xRRGGBB', () => {
+    for (const [, value] of entries) {
+      const n = phaserColor(value);
+      const { r, g, b } = hexToRgb(value);
+      expect(n).toBe(r * 65536 + g * 256 + b);
+    }
   });
 });

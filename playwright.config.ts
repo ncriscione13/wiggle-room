@@ -21,7 +21,18 @@ export default defineConfig({
       args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'],
     },
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] }, testIgnore: /render-fps/ },
+    {
+      // Perf measurements run AFTER the functional suite, alone: sharing the
+      // machine with parallel browsers (and MediaPipe wasm inference) skews
+      // fps numbers badly (measured 46 fps under contention vs 60 solo).
+      name: 'perf',
+      use: { ...devices['Desktop Chrome'] },
+      dependencies: ['chromium'],
+      testMatch: /render-fps/,
+    },
+  ],
   webServer: {
     command: `npm run preview -- --port ${PORT} --strictPort`,
     url: `http://localhost:${PORT}`,

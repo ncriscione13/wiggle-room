@@ -4,18 +4,32 @@
 import { openCamera, CameraOpenError } from '../tracking/camera';
 import { createPoseLandmarker } from '../tracking/landmarker';
 import { LivePoseSource } from '../tracking/live-pose-source';
+import { ReplayPoseSource } from '../tracking/replay-pose-source';
 import { sourceConfigFromUrl } from '../tracking/source-config';
+import type { PoseSource } from '../tracking/pose-source';
+import { mountPoseStage } from '../ui/pose-stage';
 import { mountReplayBadge } from './replay-badge';
 import { renderCameraErrorScreen } from './camera-error-screen';
 import { mountStatusChip } from './status-chip';
 import { renderStartScreen } from './start-screen';
+
+function showStage(root: HTMLElement, source: PoseSource): void {
+  // The stage replaces the start screen as the visual surface.
+  root.querySelector('.wr-start')?.remove();
+  mountPoseStage(root, source);
+}
 
 export async function bootApp(root: HTMLElement): Promise<void> {
   renderStartScreen(root);
   const config = sourceConfigFromUrl(window.location.search);
 
   if (config.source === 'replay') {
-    await mountReplayBadge(root, config.clip);
+    const clip = await mountReplayBadge(root, config.clip);
+    if (clip !== null) {
+      const replay = new ReplayPoseSource(clip, { speed: config.speed, loop: true });
+      await replay.start();
+      showStage(root, replay);
+    }
     return;
   }
 
@@ -40,6 +54,7 @@ export async function bootApp(root: HTMLElement): Promise<void> {
       renderCameraErrorScreen(root, 'unknown');
     });
     await live.start();
+    showStage(root, live);
     const update = (): void => {
       const poseCount = live.latest()?.poses.filter((p) => p !== null).length ?? 0;
       chip.textContent =
