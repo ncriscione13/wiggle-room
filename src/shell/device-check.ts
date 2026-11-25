@@ -172,7 +172,7 @@ export function loadDeviceCheckRecord(
   store: KeyValueStore = browserStore,
 ): DeviceCheckRecord | null {
   const raw = store.get(RECORD_KEY);
-  if (raw === null) return null;
+  if (raw === null || raw === '') return null;
   try {
     const parsed: unknown = JSON.parse(raw);
     if (typeof parsed === 'object' && parsed !== null && 'avgMs' in parsed) {
@@ -189,6 +189,12 @@ export function saveDeviceCheckRecord(
   store: KeyValueStore = browserStore,
 ): void {
   store.set(RECORD_KEY, JSON.stringify(record));
+}
+
+/** `?recheck=1` (tuning): forget the stored benchmark so the next boot runs
+ * the full check + input-size ladder again under current conditions. */
+export function clearDeviceCheckRecord(store: KeyValueStore = browserStore): void {
+  store.set(RECORD_KEY, '');
 }
 
 // --- Parent-facing warning ---------------------------------------------------

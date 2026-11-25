@@ -2,6 +2,25 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-25 — M0 TV tuning round 1 — Nick's first real numbers
+
+Nick's overlay on the TV machine: 640×480 @ 30 fps camera, **inference 36.0 ms avg /
+48.1 p99**, camera interval 67.9 ms (p99 133), render 19.3 ms (51.9 fps). Diagnosis:
+36 ms inference > 33 ms frame period → the rVFC loop (correctly, by design — no queuing)
+processes every other frame → 67 ms interval; main-thread inference also drags render to
+52 fps. Everything cascades from the inference number.
+
+- **Added `?recheck=1`**: forgets the stored benchmark so the device check + input-size
+  ladder re-run under current real conditions (the stored record likely came from an
+  empty-room first run). Parent-settings UI for this still lands in M1.10.
+- Open diagnostics with Nick: GPU vs CPU delegate on that machine, kid count during the
+  reading, hardware acceleration, power state, webcam model (reports 30 fps max?).
+- **Escalation path if the ladder isn't enough** (pre-authorized by DESIGN "Lag budget"
+  code rules: "If drawing still misses frames, move tracking into a Web Worker"):
+  move inference off the main thread. That restores 60 fps render immediately and
+  decouples skeleton drawing from inference stalls, but doesn't speed inference itself.
+  Decide after Nick's delegate/ladder results.
+
 ## 2026-11-25 — M0 fresh-eyes review — 12 findings, all addressed
 
 - **Device check is now pose-aware** (IMPORTANT): the benchmark records `posesSeen` (max

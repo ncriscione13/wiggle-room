@@ -6,6 +6,7 @@ import { openCamera, CameraOpenError, type CameraHandle } from '../tracking/came
 import { DEVICE_CHECK_DURATION_S } from '../motion/config';
 import { DEVICE_CHECK_TRACKING_MAX_S } from '../motion/config';
 import {
+  clearDeviceCheckRecord,
   collectBenchmarkSamples,
   loadDeviceCheckRecord,
   planDeviceCheck,
@@ -235,6 +236,12 @@ export async function bootApp(root: HTMLElement): Promise<void> {
     };
 
     let live = await attach(camera);
+
+    // Tuning hook: ?recheck=1 forgets the stored benchmark so the check and
+    // its input-size ladder run again under current real conditions.
+    if (new URLSearchParams(window.location.search).has('recheck')) {
+      clearDeviceCheckRecord();
+    }
 
     // M0.6: first-run device check (skipped once a record exists). A bench
     // that can't finish (source stopped) aborts without saving a record.

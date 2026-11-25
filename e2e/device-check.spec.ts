@@ -47,4 +47,31 @@ test.describe('device check (M0.6)', () => {
     const raw = await page.evaluate(() => localStorage.getItem('wiggle.device-check.v1'));
     expect((JSON.parse(raw ?? '{}') as { atMs: number }).atMs).toBe(seeded.atMs);
   });
+
+  test('?recheck=1 forgets the stored record and re-runs the check (tuning hook)', async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    const seeded = {
+      avgMs: 11.5,
+      p99Ms: 16.2,
+      widthPx: 640,
+      heightPx: 480,
+      delegate: 'GPU',
+      posesSeen: 2,
+      warned: false,
+      atMs: 1_700_000_000_000,
+    };
+    await page.addInitScript((record) => {
+      localStorage.setItem('wiggle.device-check.v1', JSON.stringify(record));
+    }, seeded);
+
+    await page.goto('/?recheck=1');
+    const chip = page.getByTestId('camera-chip');
+    await expect(chip).toContainText('Device check', { timeout: 45_000 });
+    await expect(chip).toContainText('Tracking', { timeout: 60_000 });
+
+    const raw = await page.evaluate(() => localStorage.getItem('wiggle.device-check.v1'));
+    expect((JSON.parse(raw ?? '{}') as { atMs: number }).atMs).not.toBe(seeded.atMs);
+  });
 });

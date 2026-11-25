@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ClipPose } from '../tracking/clip-format';
 import type { FrameHandler, PoseFrame, PoseSource } from '../tracking/pose-source';
 import {
+  clearDeviceCheckRecord,
   collectBenchmarkSamples,
   loadDeviceCheckRecord,
   planDeviceCheck,
@@ -184,6 +185,26 @@ describe('device check record storage (M0.6)', () => {
       delegate: 'GPU',
       posesSeen: 2,
     });
+  });
+
+  it('clearDeviceCheckRecord makes the record absent (the ?recheck=1 hook)', () => {
+    const store = memory();
+    saveDeviceCheckRecord(
+      {
+        avgMs: 9,
+        p99Ms: 12,
+        widthPx: 640,
+        heightPx: 480,
+        delegate: 'GPU',
+        posesSeen: 1,
+        warned: false,
+        atMs: 5,
+      },
+      store,
+    );
+    expect(loadDeviceCheckRecord(store)).not.toBeNull();
+    clearDeviceCheckRecord(store);
+    expect(loadDeviceCheckRecord(store)).toBeNull();
   });
 
   it('treats corrupted storage as absent', () => {
