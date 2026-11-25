@@ -52,8 +52,8 @@ Goal: an empty but fully guarded project. Every later task gets checked automati
   - Vitest helper to run any detector over a clip and count events
   - Playwright config launching Chrome with a fake camera (`--use-fake-device-for-media-stream`, `--use-fake-ui-for-media-stream`)
   - An app URL mode `?source=replay&clip=<name>` that feeds a clip instead of the camera
-- [ ] 0.8 GitHub Actions: on every push, run `npm ci` and `npm run check`; on `main`, also deploy to GitHub Pages (Vite `base` set to the repo name).
-- [ ] 0.9 README stub (with privacy note), LICENSE (Apache-2.0), ASSETS.md, .gitignore.
+- [x] 0.8 GitHub Actions: on every push, run `npm ci` and `npm run check`; on `main`, also deploy to GitHub Pages (Vite `base` set to the repo name).
+- [x] 0.9 README stub (with privacy note), LICENSE (Apache-2.0), ASSETS.md, .gitignore.
 
 Acceptance: `npm run check` is green locally and in CI; `npm run dev` shows a pastel "Wiggle Room" start screen; the Pages URL loads; a test proves the lint guardrails catch a forbidden import.
 

@@ -2,6 +2,17 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-25 — 0.8/0.9 — Repo, CI, docs
+
+- **GitHub repo**: public `ncriscione13/wiggle-room`, Pages enabled with build_type
+  "workflow" via the API. CI caches the pose model (key `pose-model-v1` — bump to force a
+  re-download) and the Playwright browser (keyed on package-lock).
+- **Action versions** pinned to the majors current at setup (checkout@v4, setup-node@v4,
+  cache@v4, configure-pages@v5, upload-pages-artifact@v3, deploy-pages@v4); bump when
+  GitHub deprecates.
+- **LICENSE** is the unmodified canonical Apache-2.0 text; per-file headers are not used
+  (repo-level license + ASSETS.md tracking instead).
+
 ## 2026-11-25 — 0.7 — Test harness
 
 - **Clip serving is dev/preview middleware, not shipped assets**: a tiny Vite plugin maps
