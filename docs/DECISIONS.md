@@ -6,7 +6,7 @@ Newest entries at the top. Each entry: date, task, what was decided, why.
 
 - **Clip serving is dev/preview middleware, not shipped assets**: a tiny Vite plugin maps
   `/clips/<name>.json` to `test/clips/{real,synthetic}` for the dev server and `vite
-  preview` (which e2e runs against). Production builds contain no clips; replay mode is a
+preview` (which e2e runs against). Production builds contain no clips; replay mode is a
   dev/test tool. Real-kid recordings (M0.5+) load via drag-and-drop or the same URL mode
   locally.
 - **`test/helpers/clip-runner.ts` is the detector-test harness**: `loadClip(name)` prefers
