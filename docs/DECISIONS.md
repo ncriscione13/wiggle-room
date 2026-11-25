@@ -2,6 +2,21 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-25 — M0.1 — Camera
+
+- **The camera video element is off-screen but rendered** (fixed, left:-10000px), never
+  `display:none`: hidden videos can have frame delivery throttled, which would starve
+  `requestVideoFrameCallback`. The display never shows the feed (DESIGN privacy); only
+  skeletons/buddies are drawn, mirrored at render time (x → 1−x) while landmarks stay in
+  raw camera coordinates.
+- **Two extra error kinds beyond PLAN's three**: `insecure` (no mediaDevices /
+  SecurityError — points at the https/dev:lan requirement) and `unknown` (catch-all).
+  Copy is tested for tone (no "error"/"fail", always "try again").
+- **Actual resolution/fps shows in a corner chip** until the M0.4 overlay exists, then
+  moves there (PLAN wording says "in the overlay", which arrives three tasks later).
+- **`openCamera` takes a size override** so the M0.6 device check can retry at smaller
+  input sizes without new plumbing.
+
 ## 2026-11-25 — M0.2a — PoseSource interface + ReplayPoseSource
 
 - **`PoseFrame.tS` is the source's own monotonic clock**, starting near 0: live =

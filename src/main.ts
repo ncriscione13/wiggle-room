@@ -1,12 +1,6 @@
-import { renderStartScreen } from './shell/start-screen';
-import { mountReplayBadge } from './shell/replay-badge';
-import { sourceConfigFromUrl } from './tracking/source-config';
+import { bootApp } from './shell/app';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (app !== null) {
-  renderStartScreen(app);
-  const config = sourceConfigFromUrl(window.location.search);
-  if (config.source === 'replay') {
-    void mountReplayBadge(app, config.clip);
-  }
+  void bootApp(app);
 }

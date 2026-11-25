@@ -63,7 +63,7 @@ Acceptance: `npm run check` is green locally and in CI; `npm run dev` shows a pa
 
 Goal: two kids tracked live, fast enough, with tools to measure it.
 
-- [ ] M0.1 Camera: getUserMedia at 640×480, ideal 60 fps, front-facing. Mirrored display. Show the actual resolution and fps in the overlay. Friendly screens for camera denied, no camera found and camera busy.
+- [x] M0.1 Camera: getUserMedia at 640×480, ideal 60 fps, front-facing. Mirrored display. Show the actual resolution and fps in the overlay. Friendly screens for camera denied, no camera found and camera busy.
 - [ ] M0.2 `PoseSource` interface with:
   - `LivePoseSource`: MediaPipe lite, GPU delegate, VIDEO mode, `numPoses: 2`, exactly one `detectForVideo` per new frame via `requestVideoFrameCallback`, monotonic timestamps
   - `ReplayPoseSource`: plays clips with their original timing
