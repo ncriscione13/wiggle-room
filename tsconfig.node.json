@@ -21,12 +21,5 @@
     "erasableSyntaxOnly": true,
     "skipLibCheck": true
   },
-  "include": [
-    "vite.config.ts",
-    "playwright.config.ts",
-    "eslint.guardrails.d.ts",
-    "tools",
-    "e2e",
-    "test"
-  ]
+  "include": ["vite.config.ts", "eslint.guardrails.d.ts", "tools", "test", "src/ui/theme.ts"]
 }

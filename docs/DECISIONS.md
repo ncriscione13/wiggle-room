@@ -2,6 +2,33 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-25 — 0.4 — Skeleton, stubs, start screen
+
+- **Config test strategy**: hard safety/comfort/tracking invariants (visibility 0.5,
+  outlier 1 BL/frame, debounce 0.15 s, coasting 1 s, reacquire 0.3 s, squat 0.75, jump
+  cancel 0.15 BL, grace windows, full lag budget, flash ceiling, difficulty 3-up/2-down)
+  are pinned to DESIGN.md's exact numbers — changing one deliberately means editing
+  config + test + this log. Tunable gameplay numbers (music gaps, race lengths, round
+  lengths) get structural checks only, because playtest tuning is the expected workflow.
+- **Unit convention**: every config constant name ends in `_S`, `_BL`, `_RATIO`,
+  `_PER_S`, `_PX`, `_HZ`, `_DAYS` or `_COUNT` (test-enforced). All times in seconds.
+- **Game contract refinements** (per CLAUDE.md "refine in Phase 0"): added
+  `TrackingState`, `MotionEvent`/`MotionEventHandler` (with `tS` monotonic seconds),
+  `BuddyPose` (named joints, normalized to the player's half — games draw the buddy
+  without ever seeing raw landmarks), `Calibration` fields matching the warm-up table
+  (BL units), `AudioBus.outputDelayS` (M1.8), `RoundResult`/`PlayerRoundResult`.
+  `MotionEvents.on()` returns an unsubscribe function.
+- **`AgeMode` lives in `src/games/types.ts`** (the contract requires it there);
+  `src/motion/config.ts` imports it **type-only**. Runtime layering stays
+  tracking → motion → games; this one upward edge is erased at compile time.
+- **Third tsconfig (`tsconfig.e2e.json`)**: Playwright specs run in Node but their
+  `page.evaluate` callbacks are browser code, so e2e gets ES2023+DOM libs. App and
+  node projects stay DOM-pure and Node-pure respectively.
+- **`src/ui/theme.test.ts` joins the color-rule exemption list**: it verifies
+  `cssRgb()` output format, which requires writing `rgb(` in an expected string.
+- **Start screen layout px values** (circle size, gaps) are presentation CSS, not
+  thresholds; they stay inline. Type sizes come from `typography` tokens.
+
 ## 2026-11-25 — 0.3 — Guardrail lint rules
 
 - **Guardrails live in `eslint.guardrails.js`**, imported by both `eslint.config.js` and

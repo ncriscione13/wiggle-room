@@ -82,9 +82,9 @@ export const guardrailConfigs = [
   {
     name: 'guardrail/colors-only-in-theme',
     files: ['**/*.ts'],
-    // theme.ts is where colors live; the guardrail test holds forbidden color
-    // fixtures as plain strings and would flag itself.
-    ignores: ['src/ui/theme.ts', 'test/lint-guardrails.test.ts'],
+    // theme.ts is where colors live; its own test verifies rgb() formatting;
+    // the guardrail test holds forbidden color fixtures as plain strings.
+    ignores: ['src/ui/theme.ts', 'src/ui/theme.test.ts', 'test/lint-guardrails.test.ts'],
     rules: {
       'no-restricted-syntax': ['error', ...colorSelectors],
     },
