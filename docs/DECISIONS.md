@@ -2,6 +2,25 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-25 — 0.7 — Test harness
+
+- **Clip serving is dev/preview middleware, not shipped assets**: a tiny Vite plugin maps
+  `/clips/<name>.json` to `test/clips/{real,synthetic}` for the dev server and `vite
+  preview` (which e2e runs against). Production builds contain no clips; replay mode is a
+  dev/test tool. Real-kid recordings (M0.5+) load via drag-and-drop or the same URL mode
+  locally.
+- **`test/helpers/clip-runner.ts` is the detector-test harness**: `loadClip(name)` prefers
+  a real recording, falls back to the generated file, else builds the synthetic clip
+  in memory (no disk writes → no test-worker races). `runOverClip(clip, sink)` returns
+  events + per-name counts for "exactly N events" assertions.
+- **`?clip=<name>` shorthand accepted** in addition to `?source=replay&clip=` (PLAN M0.5
+  mentions `?clip=`). Clip names must be `[a-z0-9-]` slugs; anything else falls back to
+  the camera, and the loader refuses suspicious names before fetching.
+- **Playwright global setup** generates synthetic clips if missing (single process, no
+  races) and every browser launches with the fake-camera flags.
+- **`src/assets/loader.ts`** (the one allowed fetch) validates clip JSON before returning;
+  the replay badge shows ready/error states so failures are visible, not silent.
+
 ## 2026-11-25 — 0.6 — Synthetic clips and the canonical clip format
 
 - **Clip format lives in `src/tracking/clip-format.ts`** and is shared by the generator,

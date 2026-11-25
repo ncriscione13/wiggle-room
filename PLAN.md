@@ -48,7 +48,7 @@ Goal: an empty but fully guarded project. Every later task gets checked automati
 
   Saved to `test/clips/synthetic/`. Tests use these until real clips exist.
 
-- [ ] 0.7 Test harness:
+- [x] 0.7 Test harness:
   - Vitest helper to run any detector over a clip and count events
   - Playwright config launching Chrome with a fake camera (`--use-fake-device-for-media-stream`, `--use-fake-ui-for-media-stream`)
   - An app URL mode `?source=replay&clip=<name>` that feeds a clip instead of the camera
