@@ -237,6 +237,16 @@ export async function bootApp(root: HTMLElement): Promise<void> {
 
     let live = await attach(camera);
 
+    // Stall watchdog: frame starvation (hidden window, compositor quirks)
+    // must never be silent -- the Tracking chip would otherwise sit at
+    // "0 frames" with no explanation.
+    window.setTimeout(() => {
+      if (live.frames() === 0) {
+        chip.textContent += ' · no camera frames — is this window visible?';
+        session?.overlay.events.push('no video frames after 3 s (compositor stall?)', 0);
+      }
+    }, 3000);
+
     // Tuning hook: ?recheck=1 forgets the stored benchmark so the check and
     // its input-size ladder run again under current real conditions.
     if (new URLSearchParams(window.location.search).has('recheck')) {

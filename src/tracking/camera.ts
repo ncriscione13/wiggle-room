@@ -79,11 +79,20 @@ export async function openCamera(request: CameraRequest = {}): Promise<CameraHan
   video.playsInline = true;
   video.muted = true;
   video.autoplay = true;
-  // Off-screen but rendered: display:none can throttle video frame delivery.
+  // The element must START inside the viewport: real Chrome lazily skips
+  // compositing for videos born off-screen, starving requestVideoFrameCallback
+  // to ~3 Hz on some GPU paths (measured: 8 callbacks/2.5 s off-screen-at-play
+  // vs 40/2 s visible-at-play, same stream, same machine). 2x2 px at 1%
+  // opacity is imperceptible but always composited. Never display:none, never
+  // off-viewport.
   Object.assign(video.style, {
     position: 'fixed',
-    left: '-10000px',
-    top: '0',
+    left: '0',
+    bottom: '0',
+    width: '2px',
+    height: '2px',
+    opacity: '0.01',
+    zIndex: '1',
     pointerEvents: 'none',
   });
   video.srcObject = stream;

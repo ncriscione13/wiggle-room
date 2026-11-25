@@ -2,6 +2,25 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-25 — M0 TV tuning round 2 — rVFC compositor starvation found by live drive
+
+Driving the deployed site in real desktop Chrome (headed, fake camera) on the dev
+machine caught a cross-device bug our headless e2e can't see: **a video element that
+STARTS off-viewport is lazily skipped by Chrome's compositor on some GPU paths, and
+`requestVideoFrameCallback` starves to ~3 Hz** (measured: 8 callbacks/2.5 s for a video
+styled off-screen before `play()`, vs 40/2 s for the same stream in a visible element —
+and an element that starts visible KEEPS full rate even after moving off-screen). The
+app showed "Tracking · 0 frames" with a healthy GPU delegate and 60 fps render.
+Machine-dependent: Nick's TV machine composited the off-screen video fine.
+
+- **Fix**: the camera video now starts in-viewport — 2×2 px, 1% opacity, bottom-left
+  (imperceptible, always composited). Never off-viewport, never display:none.
+- **Stall watchdog**: if zero frames 3 s after start, the chip says so and the overlay
+  logs it — frame starvation must never be silent.
+- Automation quirks noted (not product bugs): real-Chrome's fake camera device
+  disappears for later getUserMedia calls after its tracks stop, and `width.ideal` +
+  `frameRate.ideal` constraints can NotFound against the fake device.
+
 ## 2026-11-25 — M0 TV tuning round 1 — Nick's first real numbers
 
 Nick's overlay on the TV machine: 640×480 @ 30 fps camera, **inference 36.0 ms avg /
