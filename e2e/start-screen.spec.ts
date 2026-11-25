@@ -1,9 +1,16 @@
 import { expect, test } from '@playwright/test';
 import { colors, cssRgb, playerColors } from '../src/ui/theme';
 
-// Task 0.4 acceptance: `npm run dev` (and the built app) shows a pastel
-// "Wiggle Room" start screen. Colors are asserted against theme tokens --
-// never against literal values -- so theme.ts stays the single source.
+// Task 0.4 acceptance: the pastel "Wiggle Room" start screen. Since M0 the
+// stage REPLACES the start screen once live tracking is up, so these specs
+// freeze boot at the start screen by making getUserMedia never resolve --
+// deterministic on fast and slow machines alike (the takeover race bit CI).
+
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    navigator.mediaDevices.getUserMedia = () => new Promise<MediaStream>(() => undefined);
+  });
+});
 
 test('start screen shows the Wiggle Room title on the night surface', async ({ page }) => {
   await page.goto('/');
