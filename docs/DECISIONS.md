@@ -2,6 +2,25 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-25 — M0.6 — Device check
+
+- **Reduction ladder before warning**: full size → 480×360 → 320×240 (config constants),
+  each re-benchmarked for 5 s; only when the smallest size still exceeds 20 ms does the
+  parent-facing warning show (dismissible, tips tested for tone). The landmarker is
+  shared across camera reopenings — only camera + stage session rebuild.
+- **The decision flow (`planDeviceCheck`) is a pure async planner** taking a run-step
+  callback, so the ladder walk and warn conditions are fully unit-tested with stub
+  benchmarks; the e2e covers the real happy path and the stored-record skip.
+- **Record in localStorage** (`wiggle.device-check.v1`: avg/p99 ms, final size, delegate,
+  warned, timestamp), storage access fully guarded; corrupted = absent = re-run. Parents
+  can clear it by clearing site data (a proper re-run button joins parent settings in
+  M1.10).
+- **CI reality**: on a slow runner the ladder may legitimately run (CPU inference on the
+  fake pattern), so live-path e2e timeouts are generous and the warning screen appearing
+  is tolerated by the specs. One e2e race fixed on the way: the recorder's "Saved" chip
+  self-dismisses, so the spec asserts it before slow file reads, and records by polling
+  the frame counter instead of sleeping.
+
 ## 2026-11-25 — M0.5 — Pose recorder + drag-and-drop
 
 - **"Dev only" = dev build OR `?debug=1`**: Nick runs the built app (preview/Pages) on

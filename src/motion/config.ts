@@ -79,6 +79,11 @@ export const LAG_BUDGET_TOTAL_S = 0.1;
 export const LAG_HARD_LIMIT_S = 0.12;
 /** Device check: two-kid tracking must stay under this per frame. */
 export const DEVICE_CHECK_TRACKING_MAX_S = 0.02;
+/** First-run benchmark length. */
+export const DEVICE_CHECK_DURATION_S = 5;
+/** Input-size reduction ladder when tracking is too slow (paired by index). */
+export const CAMERA_FALLBACK_WIDTHS_PX: readonly number[] = [480, 320];
+export const CAMERA_FALLBACK_HEIGHTS_PX: readonly number[] = [360, 240];
 /** npm run bench: motion kit over the 10-min two-kid clip, average per frame. */
 export const BENCH_MOTION_KIT_AVG_MAX_S = 0.001;
 /** npm run bench: p99 per frame. */

@@ -70,7 +70,7 @@ Goal: two kids tracked live, fast enough, with tools to measure it.
 - [x] M0.3 Phaser app at 60 fps drawing the latest pose. Rendering never waits for tracking. Test: replay at 2× speed, and drawing still holds 60 fps in Playwright traces.
 - [x] M0.4 Debug overlay (toggle with D): skeletons in player colors, both floor circles, per-stage ms (camera frame interval, inference, motion kit, render), fps, last 10 events.
 - [x] M0.5 Pose recorder (dev only, R to start/stop): saves landmarks + timestamps as JSON (never video). Clips can be loaded into the replay source by drag-and-drop or `?clip=`.
-- [ ] M0.6 Device check on first run: a 5-second benchmark stores two-kid tracking ms. Above 20 ms, the app reduces input size first, then shows a parent-facing warning.
+- [x] M0.6 Device check on first run: a 5-second benchmark stores two-kid tracking ms. Above 20 ms, the app reduces input size first, then shows a parent-facing warning.
 - [ ] M0.7 Lag test screen plus `docs/LAG-TEST.md`: a large high-contrast marker follows the right wrist, with an on-screen millisecond counter. Includes step-by-step phone slow-motion instructions (240 fps; count frames; ~4 ms per frame).
 - [ ] M0.8 Clip-recording mode with on-screen prompts for the clips I'll record with the kids. Each is saved to `test/clips/real/` with a clear name:
   - Standing still 30 s

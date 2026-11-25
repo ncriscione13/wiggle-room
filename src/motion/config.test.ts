@@ -25,6 +25,9 @@ function isPerAgeMode(v: unknown): v is Record<'little' | 'big', unknown> {
 
 function leafNumbers(name: string, v: unknown): number[] {
   if (typeof v === 'number') return [v];
+  if (Array.isArray(v)) {
+    return v.flatMap((item, i) => leafNumbers(`${name}[${String(i)}]`, item));
+  }
   if (isRange(v)) {
     expect(v.min, `${name}.min > max`).toBeLessThanOrEqual(v.max);
     return [v.min, v.max];

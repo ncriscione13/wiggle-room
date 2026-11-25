@@ -2,7 +2,17 @@
 // stage with the debug overlay, surface problems with friendly screens, and
 // (dev only) mount the recorder + clip drag-and-drop.
 
-import { openCamera, CameraOpenError } from '../tracking/camera';
+import { openCamera, CameraOpenError, type CameraHandle } from '../tracking/camera';
+import { DEVICE_CHECK_DURATION_S } from '../motion/config';
+import {
+  collectInferenceSamples,
+  loadDeviceCheckRecord,
+  planDeviceCheck,
+  renderSlowDeviceWarning,
+  saveDeviceCheckRecord,
+  summarizeSamples,
+  type SampleSummary,
+} from './device-check';
 import { createPoseLandmarker } from '../tracking/landmarker';
 import { LivePoseSource } from '../tracking/live-pose-source';
 import { ReplayPoseSource } from '../tracking/replay-pose-source';
@@ -107,18 +117,14 @@ export async function bootApp(root: HTMLElement): Promise<void> {
     return;
   }
 
-  let cameraLabel: string;
+  const labelOf = (c: CameraHandle): string =>
+    `${String(c.widthPx)}×${String(c.heightPx)} @ ${String(c.fps)} fps`;
+
+  let camera: CameraHandle;
   let chip: HTMLElement;
-  let video: HTMLVideoElement;
-  let stopCamera: () => void;
   try {
-    const camera = await openCamera();
-    cameraLabel = `${String(camera.widthPx)}×${String(camera.heightPx)} @ ${String(camera.fps)} fps`;
-    chip = mountStatusChip(root, 'camera-chip', `Camera ${cameraLabel} · starting tracking…`);
-    video = camera.video;
-    stopCamera = (): void => {
-      camera.stop();
-    };
+    camera = await openCamera();
+    chip = mountStatusChip(root, 'camera-chip', `Camera ${labelOf(camera)} · starting tracking…`);
   } catch (error) {
     const kind = error instanceof CameraOpenError ? error.kind : 'unknown';
     renderCameraErrorScreen(root, kind);
@@ -127,21 +133,60 @@ export async function bootApp(root: HTMLElement): Promise<void> {
 
   try {
     const handle = await createPoseLandmarker();
-    const live = new LivePoseSource({ video, landmarker: handle.landmarker });
-    live.onError(() => {
-      renderCameraErrorScreen(root, 'unknown');
-    });
-    const s = startStageSession(root, live, cameraLabel, () => {
-      stopCamera();
-      handle.close();
-    });
-    s.overlay.events.push(`tracking started · ${handle.delegate}`, 0);
-    await live.start();
+
+    const attach = async (cam: CameraHandle): Promise<LivePoseSource> => {
+      const live = new LivePoseSource({ video: cam.video, landmarker: handle.landmarker });
+      live.onError(() => {
+        renderCameraErrorScreen(root, 'unknown');
+      });
+      const s = startStageSession(root, live, labelOf(cam), () => {
+        cam.stop();
+      });
+      s.overlay.events.push(`tracking started · ${handle.delegate}`, 0);
+      await live.start();
+      return live;
+    };
+
+    let live = await attach(camera);
+
+    // M0.6: first-run device check (skipped once a record exists).
+    if (loadDeviceCheckRecord() === null) {
+      let finalSummary: SampleSummary = { avgS: 0, p99S: 0, count: 0 };
+      const outcome = await planDeviceCheck(async (step) => {
+        if (step.widthPx !== null && step.heightPx !== null) {
+          session?.destroy(); // stops live + stage + overlay + that camera
+          camera = await openCamera({ widthPx: step.widthPx, heightPx: step.heightPx });
+          live = await attach(camera);
+        }
+        chip.textContent = `Device check… · ${labelOf(camera)}`;
+        finalSummary = summarizeSamples(
+          await collectInferenceSamples(live, DEVICE_CHECK_DURATION_S),
+        );
+        return finalSummary.avgS;
+      });
+
+      const round1 = (n: number): number => Math.round(n * 10) / 10;
+      saveDeviceCheckRecord({
+        avgMs: round1(outcome.avgS * 1000),
+        p99Ms: round1(finalSummary.p99S * 1000),
+        widthPx: camera.widthPx,
+        heightPx: camera.heightPx,
+        delegate: handle.delegate,
+        warned: outcome.warned,
+        atMs: Date.now(),
+      });
+      session?.overlay.events.push(
+        `device check · avg ${round1(outcome.avgS * 1000).toFixed(1)} ms @ ${labelOf(camera)}`,
+        0,
+      );
+      if (outcome.warned) renderSlowDeviceWarning(root);
+    }
+
     const update = (): void => {
       const poseCount = live.latest()?.poses.filter((p) => p !== null).length ?? 0;
       chip.textContent =
         `Tracking · ${String(live.frames())} frames · ${String(poseCount)} poses · ` +
-        `${cameraLabel} · ${handle.delegate}`;
+        `${labelOf(camera)} · ${handle.delegate}`;
     };
     window.setInterval(update, 500);
   } catch {

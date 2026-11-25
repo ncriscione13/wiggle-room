@@ -7,10 +7,12 @@ import { expect, test } from '@playwright/test';
 // check (M0.6).
 
 test('live tracking starts from local assets and processes frames', async ({ page }) => {
+  test.setTimeout(120_000); // the first-run device check (M0.6) may walk the ladder on CI
   await page.goto('/');
   const chip = page.getByTestId('camera-chip');
-  // Wasm + model load from this origin; allow a generous first-init window.
-  await expect(chip).toContainText('Tracking', { timeout: 30000 });
+  // Wasm + model load from this origin; the first-run device check (possibly
+  // walking the reduction ladder on a slow runner) happens before "Tracking".
+  await expect(chip).toContainText('Tracking', { timeout: 90000 });
 
   const count = async (): Promise<number> => {
     const text = (await chip.textContent()) ?? '';

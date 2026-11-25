@@ -14,11 +14,20 @@ test('R starts and stops a recording that downloads a valid clip', async ({ page
   await page.keyboard.press('r');
   const chip = page.getByTestId('recorder-chip');
   await expect(chip).toContainText('REC');
-  await page.waitForTimeout(900);
+  // Poll the live frame counter instead of sleeping: under parallel-suite CPU
+  // load a fixed wait records too few frames.
+  await expect
+    .poll(async () => Number(/(\d+) frames/.exec((await chip.textContent()) ?? '')?.[1] ?? '0'), {
+      timeout: 30000,
+    })
+    .toBeGreaterThan(15);
 
   const downloadPromise = page.waitForEvent('download');
   await page.keyboard.press('r');
   const download = await downloadPromise;
+  // The "Saved" chip self-dismisses after a few seconds, so check it before
+  // the slower file reads below.
+  await expect(chip).toContainText('Saved');
   expect(download.suggestedFilename()).toMatch(/^recording-\d{8}-\d{6}\.json$/);
 
   const path = await download.path();
@@ -26,7 +35,6 @@ test('R starts and stops a recording that downloads a valid clip', async ({ page
   expect(validateClipFile(clip)).toEqual([]);
   expect(clip.kind).toBe('recorded');
   expect(clip.frames.length).toBeGreaterThan(10);
-  await expect(chip).toContainText('Saved');
 });
 
 test('dropping a clip JSON replays it on the stage', async ({ page }) => {
