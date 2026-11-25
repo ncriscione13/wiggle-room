@@ -26,7 +26,7 @@ Read CLAUDE.md, PLAN.md and docs/DESIGN.md fully. Then work through PLAN.md star
 
 Goal: an empty but fully guarded project. Every later task gets checked automatically.
 
-- [ ] 0.1 Scaffold Vite + TypeScript (strict) in the repo root, keeping CLAUDE.md, PLAN.md and docs/. Install: phaser, @mediapipe/tasks-vision, vitest, @playwright/test, eslint, prettier, vite-plugin-pwa, @vitejs/plugin-basic-ssl. Create `docs/DECISIONS.md`.
+- [x] 0.1 Scaffold Vite + TypeScript (strict) in the repo root, keeping CLAUDE.md, PLAN.md and docs/. Install: phaser, @mediapipe/tasks-vision, vitest, @playwright/test, eslint, prettier, vite-plugin-pwa, @vitejs/plugin-basic-ssl. Create `docs/DECISIONS.md`.
 - [ ] 0.2 npm scripts: `dev`, `dev:lan` (HTTPS, `--host`), `build`, `preview`, `test`, `lint`, `typecheck`, `e2e`, `bench`, `voice`, and `check` (typecheck + lint + test + build + e2e, in that order, failing fast).
 - [ ] 0.3 Guardrail lint rules:
     - No imports from `src/tracking/` inside `src/games/`

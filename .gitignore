@@ -1,0 +1,23 @@
+# Dependencies and build output
+node_modules/
+dist/
+dev-dist/
+
+# Test artifacts
+coverage/
+test-results/
+playwright-report/
+blob-report/
+
+# Downloaded offline assets (restored by `npm run fetch-models` and postinstall)
+public/models/
+public/mediapipe/
+
+# Generated synthetic clips (restored by `npm run clips:synth`, deterministic)
+test/clips/synthetic/
+
+# Tooling caches
+.eslintcache
+*.tsbuildinfo
+*.local
+.DS_Store

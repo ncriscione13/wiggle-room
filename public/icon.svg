@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Placeholder app icon; replaced in the M4.1 art pass. -->
+  <rect width="512" height="512" rx="112" fill="#2b3045"/>
+  <circle cx="176" cy="200" r="72" fill="#a8d8b9"/>
+  <circle cx="336" cy="200" r="72" fill="#f2b8c6"/>
+  <path d="M96 360 q80 72 160 0 q80 72 160 0" stroke="#e8e3d8" stroke-width="28" fill="none" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,9 @@
+* text=auto eol=lf
+*.png binary
+*.ico binary
+*.webp binary
+*.task binary
+*.wasm binary
+*.mp3 binary
+*.ogg binary
+*.woff2 binary

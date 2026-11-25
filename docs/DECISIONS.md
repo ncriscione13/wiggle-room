@@ -2,6 +2,34 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-25 — 0.1 — Version pins and scaffold choices
+
+- **Exact version pins** (no ranges; the lockfile is committed): vite 8.3.8, typescript 6.0.3,
+  phaser 4.2.1, @mediapipe/tasks-vision 1.2.3, vitest 5.1.2, @playwright/test 1.65.1,
+  eslint 10.15.0, typescript-eslint 8.74.0, prettier 3.10.1, vite-plugin-pwa 2.0.0,
+  @vitejs/plugin-basic-ssl 2.3.0, @types/node 26.6.10.
+- **TypeScript 6.0.3, not 7.x**: typescript-eslint 8.74.0 declares peer support
+  `typescript >=4.8.4 <6.1.0`, so the new native TS 7 compiler is out until the lint
+  toolchain supports it.
+- **Phaser 4** (latest stable, per CLAUDE.md "latest stable"). If its API fights the M0/M1
+  work in practice, dropping to Phaser 3.90 is the fallback — would be logged here.
+- **MediaPipe tasks-vision 1.2.3**: latest stable (1.3.x is still RC-only).
+- **npm audit: 4 moderates accepted**: all in workbox-build's internal glob/minimatch
+  (build-time service-worker generation only, processes our own files, never shipped to the
+  browser). The offered "fix" downgrades vite-plugin-pwa below Vite 8 support. Revisit when
+  workbox-build updates its glob.
+- **One color literal outside theme.ts**: `index.html` paints a bootstrap background
+  (`#2b3045`) before any JS loads, so the first frame is never pure white (design comfort
+  rule). It mirrors `surfaceNight` in `src/ui/theme.ts` (created in 0.4) and is commented in
+  both places. The lint color rule (0.3) covers TS sources; this HTML literal is the single
+  documented exception.
+- **`.gitattributes` forces LF** for all text files: Windows dev + Linux CI + Prettier
+  would otherwise fight over CRLF.
+- **Placeholder app icon** (`public/icon.svg`): replaced in the M4.1 art pass.
+- **Tests-first note for 0.1/0.2**: the scaffold and scripts tasks have no app logic to
+  unit-test; their acceptance is the toolchain itself running. The first real tests land in
+  0.3 (lint guardrail tests) and every task after that is tests-first.
+
 ## 2026-11-25 — Prep — Repo root is `motion-room`, GitHub repo will be `wiggle-room`
 
 The starter files arrived in `wiggle-room-starter/` inside `C:\Dev\motion-room`. Claude Code and the
