@@ -7,16 +7,17 @@ import { LivePoseSource } from '../tracking/live-pose-source';
 import { ReplayPoseSource } from '../tracking/replay-pose-source';
 import { sourceConfigFromUrl } from '../tracking/source-config';
 import type { PoseSource } from '../tracking/pose-source';
-import { mountPoseStage } from '../ui/pose-stage';
+import { mountPoseStage, type PoseStage } from '../ui/pose-stage';
+import { mountDebugOverlay } from '../debug/overlay';
 import { mountReplayBadge } from './replay-badge';
 import { renderCameraErrorScreen } from './camera-error-screen';
 import { mountStatusChip } from './status-chip';
 import { renderStartScreen } from './start-screen';
 
-function showStage(root: HTMLElement, source: PoseSource): void {
+function showStage(root: HTMLElement, source: PoseSource): PoseStage {
   // The stage replaces the start screen as the visual surface.
   root.querySelector('.wr-start')?.remove();
-  mountPoseStage(root, source);
+  return mountPoseStage(root, source);
 }
 
 export async function bootApp(root: HTMLElement): Promise<void> {
@@ -27,8 +28,14 @@ export async function bootApp(root: HTMLElement): Promise<void> {
     const clip = await mountReplayBadge(root, config.clip);
     if (clip !== null) {
       const replay = new ReplayPoseSource(clip, { speed: config.speed, loop: true });
+      const stage = showStage(root, replay);
+      const overlay = mountDebugOverlay(root, {
+        source: replay,
+        stage,
+        sourceLabel: `${clip.name} ×${String(config.speed)}`,
+      });
+      overlay.events.push('replay started', 0);
       await replay.start();
-      showStage(root, replay);
     }
     return;
   }
@@ -53,8 +60,10 @@ export async function bootApp(root: HTMLElement): Promise<void> {
     live.onError(() => {
       renderCameraErrorScreen(root, 'unknown');
     });
+    const stage = showStage(root, live);
+    const overlay = mountDebugOverlay(root, { source: live, stage, sourceLabel: cameraLabel });
+    overlay.events.push(`tracking started · ${handle.delegate}`, 0);
     await live.start();
-    showStage(root, live);
     const update = (): void => {
       const poseCount = live.latest()?.poses.filter((p) => p !== null).length ?? 0;
       chip.textContent =

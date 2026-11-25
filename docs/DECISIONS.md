@@ -2,6 +2,22 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-25 — M0.4 — Debug overlay
+
+- **Skeletons and floor circles stay on the Phaser stage** (always-on skeletons are the
+  M0 display; circles appear while the overlay is open); the overlay panel itself is DOM
+  on top — cheaper than drawing text in WebGL and invisible to the render-fps budget when
+  hidden.
+- **The event ring carries lifecycle + pose presence transitions** until M1's motion kit
+  pushes real events into the same `EventRing`. "Motion kit" row honestly reads
+  "arrives in M1" instead of a fake 0.
+- **`RollingStats.p99` is standard nearest-rank** (`sorted[ceil(0.99·n)−1]`). My first
+  test expected the lone worst sample of 100 at p99 — that's p100; the test was wrong,
+  not the implementation, and now uses an unambiguous 1..100 fixture. The M1 bench
+  (18 000 frames) gets fine-grained tails from the same definition.
+- **Replay frames don't feed the inference stat** (always 0); the overlay says
+  "(replay)" so a dev never mistakes replay numbers for tracking speed.
+
 ## 2026-11-25 — M0.3 — Phaser stage + the fps measurement lesson
 
 - **The fps acceptance test first failed at 46 fps — and the app was innocent.** Solo
