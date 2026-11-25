@@ -2,6 +2,28 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-25 — 0.6 — Synthetic clips and the canonical clip format
+
+- **Clip format lives in `src/tracking/clip-format.ts`** and is shared by the generator,
+  the replay source (0.7), the pose recorder (M0.5) and all clip tests. Frames are
+  `{ tS, poses }` with compact `[x, y, z, visibility]` landmark tuples (33 per pose,
+  MediaPipe normalized image coords, y down), `tS` in strictly-increasing seconds.
+- **Clips are generated artifacts**: gitignored, rebuilt deterministically by
+  `npm run clips:synth` (seeded per clip name; the 10-min two-kid clip is ~36 MB on disk,
+  too big for git). Tests build clips in memory from the same code.
+- **PLAN's "running at 2 and 3 steps/s" became two clips** (`run-2sps-10s`,
+  `run-3sps-10s`), so the catalog has 9 files for the 8 scenarios.
+- **Noise model** (applied to every clip): Gaussian jitter sigma 0.0025, visibility
+  0.92±0.04, 0.8% dropped points (vis < 0.5), rare (0.08%) single-frame outlier spikes up
+  to 0.2 units — detectors must reject these per CLAUDE.md rule 6, so the test-side pulse
+  counters median-filter and require 2-frame persistence.
+- **Skeleton proportions**: shoulder-mid→hip-mid is exactly 1 BL; legs 1.6 BL; arms
+  0.45+0.45 BL. "left*" landmarks sit at smaller x (anatomical mirroring is irrelevant
+  to detectors, which treat sides symmetrically).
+- **Node ESM lesson**: tools that run under plain `node` need explicit `.ts` extensions
+  on relative imports (Vite/Vitest resolve extensionless; Node does not). `src/` stays
+  extensionless (bundler convention); `tools/` uses `.ts` extensions.
+
 ## 2026-11-25 — 0.5 — Offline assets
 
 - **The live `pose_landmarker_lite.task` (5,777,746 bytes) starts with 2 zero bytes before

@@ -21,6 +21,7 @@
     "bench": "node tools/bench/run.ts",
     "voice": "node tools/voice-gen/run.ts",
     "fetch-models": "node tools/fetch-models.ts",
+    "clips:synth": "node tools/clip-synth/run.ts",
     "postinstall": "node tools/copy-mediapipe-wasm.ts",
     "check": "npm run typecheck && npm run lint && npm run test && npm run build && npm run e2e"
   },
