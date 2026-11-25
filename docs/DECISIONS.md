@@ -2,6 +2,40 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-25 — Phase 0 fresh-eyes review — 10 fixes + 1 logged decision
+
+An independent review agent audited the whole phase. Fixed:
+
+- **Node floor raised to `^22.18.0 || >=24`** (was >=22.12): bare `node tools/*.ts` needs
+  Node's type stripping (22.18+/24); on 22.12–22.17 `npm install` itself died in
+  postinstall. README now names the requirement. (IMPORTANT)
+- **PWA manifest colors**: vite-plugin-pwa's defaults leaked a pure-white
+  `background_color` (the installed app's splash — comfort-rule violation) and a foreign
+  green `theme_color`. Both now come from `theme.colors.surfaceNight`, pinned by
+  `e2e/manifest.spec.ts` against the built output. (IMPORTANT)
+- **Guardrail wiring test**: the lint tests proved the rules work but not that
+  `eslint.config.js` ships them; a new test asserts every `guardrail/*` entry is present
+  in the shipped config (via `eslint.config.d.ts`).
+- **CI guard test** now matches `- run: npm run check` as a real step, not a comment.
+- **`fileURLToPath`** replaces `URL.pathname` in the guardrail test so clone paths with
+  spaces don't break all guardrail tests.
+- **Three missing DESIGN numbers added to config** (+pins): `GAME_INTRO_S = 10`,
+  `COOLDOWN_STRETCH_S = 60`, `RAINBOW_BURST_POPS_COUNT = 5`.
+- **Color guardrail covers `.tsx/.js/.mjs/.cjs`** too, closing a future-file loophole.
+- **CI also runs on `pull_request`** so fork PRs get the gate (beyond PLAN 0.8's letter;
+  a same-repo PR may run twice — accepted).
+- **New layering guardrail**: `src/motion/**` may not runtime-import from `src/games/**`
+  (type-only imports allowed — the documented AgeMode edge), with tests both ways.
+- **`loadClipWithSource`** exposes which clip source a test consumed (real file /
+  synthetic file / in-memory), so pinned-count detector tests can name it on failure.
+
+Logged, not changed: **service-worker update strategy stays `autoUpdate`**
+(skipWaiting + clientsClaim + cleanupOutdatedCaches). Today the app is one eager bundle,
+so version skew can't strand a running page. When M3 introduces lazy game chunks
+(`import.meta.glob`), an update landing mid-session could delete chunks an open page
+still wants — revisit then: likely keep autoUpdate but reload on `controllerchange` at a
+safe moment (between rounds), since an update prompt is wrong for a kids' TV app.
+
 ## 2026-11-25 — 0.8/0.9 — Repo, CI, docs
 
 - **GitHub repo**: public `ncriscione13/wiggle-room`, Pages enabled with build_type

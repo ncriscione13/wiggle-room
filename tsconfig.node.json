@@ -24,6 +24,7 @@
   "include": [
     "vite.config.ts",
     "eslint.guardrails.d.ts",
+    "eslint.config.d.ts",
     "tools",
     "test",
     "src/ui/theme.ts",

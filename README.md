@@ -15,6 +15,9 @@ on their way. See `PLAN.md` for the build plan and progress.
 
 ## Quick start (dev)
 
+Needs Node 24 LTS (or ≥ 22.18 — the tools run TypeScript directly via Node's
+type stripping).
+
 ```bash
 npm install          # also copies the MediaPipe wasm into public/
 npm run fetch-models # one-time pose model download (~6 MB)

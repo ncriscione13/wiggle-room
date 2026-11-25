@@ -5,6 +5,9 @@ name: CI
 
 on:
   push:
+  # Fork PRs don't trigger upstream push events; this makes sure every PR
+  # shows the gate (a same-repo PR may run twice -- accepted).
+  pull_request:
   workflow_dispatch:
 
 concurrency:

@@ -95,6 +95,8 @@ export const PRAISE_LATE_DROP_S = 1;
 export const HELP_LINE_COOLDOWN_S = 8;
 /** Rough line length targets. */
 export const VOICE_LINE_WORDS_COUNT: PerAgeMode = { little: 6, big: 10 };
+/** Each game opens with a ~10 s spoken intro while the buddies demonstrate. */
+export const GAME_INTRO_S = 10;
 
 // --- Warm-up calibration (DESIGN.md "Warm-up calibration" table) -------------
 
@@ -148,6 +150,8 @@ export const RHYTHM_SPARKLE_AFTER_S = 3;
 export const BUBBLE_ROUND_S = 90;
 /** Touch margin around a bubble, in multiples of the kid's hand width. */
 export const TOUCH_MARGIN_HAND_WIDTHS_RATIO: PerAgeMode = { little: 1, big: 0.5 };
+/** Five quick pops trigger the rainbow burst. */
+export const RAINBOW_BURST_POPS_COUNT = 5;
 
 // --- Shell (DESIGN.md "App shell and parent settings") -----------------------
 
@@ -161,6 +165,8 @@ export const SOLO_START_AFTER_EMPTY_S = 10;
 export const REPLAY_RESTART_MAX_S = 3;
 /** Session timer heads-up before the cool-down. */
 export const SESSION_HEADSUP_S = 120;
+/** Each session ends with a 1-minute cool-down stretch (DESIGN "Safety"). */
+export const COOLDOWN_STRETCH_S = 60;
 /** Round length targets (DESIGN.md age table). */
 export const ROUND_LENGTH_S: PerAgeMode<Range> = {
   little: { min: 60, max: 120 },

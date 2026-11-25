@@ -12,9 +12,11 @@ describe('GitHub Actions workflow (task 0.8)', () => {
     expect(yml).toMatch(/on:\s*\n\s+push:/);
   });
 
-  it('installs with npm ci and runs the full check gate', () => {
-    expect(yml).toContain('npm ci');
-    expect(yml).toContain('npm run check');
+  it('installs with npm ci and runs the full check gate as real steps', () => {
+    // `- run:` prefixes so a comment mentioning the command can't satisfy the
+    // assertion (review fix).
+    expect(yml).toContain('- run: npm ci');
+    expect(yml).toContain('- run: npm run check');
   });
 
   it('fetches the pose model and installs the Playwright browser', () => {

@@ -1,6 +1,8 @@
+import { fileURLToPath } from 'node:url';
 import { ESLint, type Linter } from 'eslint';
 import tseslint from 'typescript-eslint';
 import { describe, expect, it } from 'vitest';
+import shippedConfig from '../eslint.config.js';
 import { guardrailConfigs } from '../eslint.guardrails.js';
 
 // Task 0.3 acceptance: prove the guardrail lint rules catch forbidden code and
@@ -8,7 +10,9 @@ import { guardrailConfigs } from '../eslint.guardrails.js';
 // ships (imported from eslint.guardrails.js), applied to virtual file paths, so
 // the path scoping is tested too.
 
-const repoRoot = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
+// fileURLToPath (not URL.pathname) so clone paths with spaces or non-ASCII
+// characters decode correctly on every OS (review fix).
+const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 
 const eslint = new ESLint({
   cwd: repoRoot,
@@ -30,6 +34,20 @@ async function ruleIdsFor(code: string, filePath: string): Promise<string[]> {
   const results = await eslint.lintText(code, { filePath });
   return (results[0]?.messages ?? []).map((m) => m.ruleId ?? `fatal: ${m.message}`);
 }
+
+describe('the shipped eslint.config.js actually contains the guardrails', () => {
+  // Review fix: proving the rules work is not enough -- if eslint.config.js
+  // ever drops the `...guardrailConfigs` spread, `npm run lint` silently stops
+  // enforcing everything while the rule tests stay green. This pins the wiring.
+  it('ships every guardrail entry by name', () => {
+    const shippedNames = shippedConfig.map((entry) => entry.name).filter(Boolean);
+    for (const guardrail of guardrailConfigs) {
+      expect(shippedNames, `eslint.config.js lost ${guardrail.name ?? '?'}`).toContain(
+        guardrail.name,
+      );
+    }
+  });
+});
 
 describe('guardrail: games never import from src/tracking (CLAUDE.md rule 1)', () => {
   it('catches a relative tracking import inside a game', async () => {
@@ -175,6 +193,24 @@ describe('guardrail: no network in src (CLAUDE.md rule 8)', () => {
 
   it('allows fetch in tools/ (fetch-models downloads the model at dev time)', async () => {
     const ids = await ruleIdsFor("void fetch('https://example.com');\n", 'tools/fetch-models.ts');
+    expect(ids).toEqual([]);
+  });
+});
+
+describe('guardrail: motion never runtime-imports games (layering)', () => {
+  it('catches a runtime import from games inside the motion kit', async () => {
+    const ids = await ruleIdsFor(
+      "import { thing } from '../games/types';\nthing;\n",
+      'src/motion/events.ts',
+    );
+    expect(ids).toContain('@typescript-eslint/no-restricted-imports');
+  });
+
+  it('allows type-only imports (the documented AgeMode edge)', async () => {
+    const ids = await ruleIdsFor(
+      "import type { AgeMode } from '../games/types';\nexport type X = AgeMode;\n",
+      'src/motion/config.ts',
+    );
     expect(ids).toEqual([]);
   });
 });

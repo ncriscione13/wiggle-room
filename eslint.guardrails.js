@@ -81,7 +81,8 @@ const colorSelectors = [
 export const guardrailConfigs = [
   {
     name: 'guardrail/colors-only-in-theme',
-    files: ['**/*.ts'],
+    // Broad on purpose: future .tsx/.js files don't get a color loophole.
+    files: ['**/*.{ts,tsx,js,mjs,cjs}'],
     // theme.ts is where colors live; its own test verifies rgb() formatting;
     // the guardrail test holds forbidden color fixtures as plain strings.
     ignores: ['src/ui/theme.ts', 'src/ui/theme.test.ts', 'test/lint-guardrails.test.ts'],
@@ -134,6 +135,29 @@ export const guardrailConfigs = [
     files: ['src/games/**/*.ts'],
     rules: {
       'no-restricted-imports': ['error', { patterns: [MEDIAPIPE_IMPORT, TRACKING_IMPORT] }],
+    },
+  },
+  {
+    name: 'guardrail/motion-never-runtime-imports-games',
+    files: ['src/motion/**/*.ts'],
+    rules: {
+      // The motion kit sits below the game API: runtime imports from games
+      // would invert the layering. Type-only imports are erased at compile
+      // time and allowed (the documented AgeMode edge, DECISIONS 0.4).
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/games', '**/games/**'],
+              allowTypeImports: true,
+              message:
+                'The motion kit never runtime-imports from src/games/ (layering: ' +
+                'tracking -> motion -> game API -> games). Type-only imports are fine.',
+            },
+          ],
+        },
+      ],
     },
   },
 ];

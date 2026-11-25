@@ -4,6 +4,7 @@ import basicSsl from '@vitejs/plugin-basic-ssl';
 import type { Connect, Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
 import { VitePWA } from 'vite-plugin-pwa';
+import { colors } from './src/ui/theme.ts';
 
 /**
  * Dev/preview-only middleware (task 0.7): serves /clips/<name>.json from
@@ -72,6 +73,12 @@ export default defineConfig(({ mode }) => ({
                 'Webcam motion games for kids, on your TV. Offline, no accounts, no ads.',
               display: 'fullscreen',
               orientation: 'landscape',
+              // Without these, vite-plugin-pwa defaults leak in: a pure-white
+              // background_color (the installed app's splash -- forbidden by
+              // the comfort rules) and a foreign green theme_color. Both come
+              // from the theme; e2e/manifest.spec.ts pins them.
+              background_color: colors.surfaceNight,
+              theme_color: colors.surfaceNight,
               icons: [{ src: 'icon.svg', sizes: 'any', type: 'image/svg+xml' }],
             },
             workbox: {

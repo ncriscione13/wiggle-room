@@ -139,4 +139,9 @@ describe('comfort and fairness invariants', () => {
     expect(config.DIFFICULTY_UP_AFTER_WINS_COUNT).toBe(3);
     expect(config.DIFFICULTY_DOWN_AFTER_MISSES_COUNT).toBe(2);
   });
+  it('session anchors: 10 s game intro, 1-minute cool-down, 5-pop rainbow burst', () => {
+    expect(config.GAME_INTRO_S).toBe(10);
+    expect(config.COOLDOWN_STRETCH_S).toBe(60);
+    expect(config.RAINBOW_BURST_POPS_COUNT).toBe(5);
+  });
 });

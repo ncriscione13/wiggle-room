@@ -25,23 +25,35 @@ export interface ClipRunResult {
 const SYNTHETIC_DIR = join('test', 'clips', 'synthetic');
 const REAL_DIR = join('test', 'clips', 'real');
 
+export type ClipSource = 'real-file' | 'synthetic-file' | 'synthetic-memory';
+
 /**
  * Loads a clip by name: a real recording if one exists, else the generated
  * synthetic file, else builds the synthetic clip in memory (no disk writes,
  * so parallel test workers can't race). Disk files are rounded to 4 decimals;
- * in-memory builds are full precision -- irrelevant at detector scales.
+ * in-memory builds are full precision -- irrelevant at detector scales, but
+ * the returned `source` says which one a failing test actually consumed
+ * (pinned-count tests should mention it in their assertion messages).
  */
-export function loadClip(name: string): ClipFile {
-  for (const dir of [REAL_DIR, SYNTHETIC_DIR]) {
+export function loadClipWithSource(name: string): { clip: ClipFile; source: ClipSource } {
+  const dirs: [string, ClipSource][] = [
+    [REAL_DIR, 'real-file'],
+    [SYNTHETIC_DIR, 'synthetic-file'],
+  ];
+  for (const [dir, source] of dirs) {
     const file = join(dir, `${name}.json`);
     if (existsSync(file)) {
       const clip = JSON.parse(readFileSync(file, 'utf8')) as ClipFile;
       const problems = validateClipFile(clip);
       if (problems.length > 0) throw new Error(`${file}: ${problems[0] ?? 'invalid'}`);
-      return clip;
+      return { clip, source };
     }
   }
-  return buildClip(name);
+  return { clip: buildClip(name), source: 'synthetic-memory' };
+}
+
+export function loadClip(name: string): ClipFile {
+  return loadClipWithSource(name).clip;
 }
 
 export function runOverClip(clip: ClipFile, sink: FrameSink): ClipRunResult {

@@ -6,7 +6,7 @@
   "description": "Open-source, offline webcam motion games for kids 3-10, played on a TV.",
   "license": "Apache-2.0",
   "engines": {
-    "node": ">=22.12.0"
+    "node": "^22.18.0 || >=24.0.0"
   },
   "scripts": {
     "dev": "vite",
