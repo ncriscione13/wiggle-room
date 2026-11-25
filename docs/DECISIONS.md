@@ -2,6 +2,25 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-25 — M0.2b — LivePoseSource
+
+- **The next `requestVideoFrameCallback` is registered only after a frame is fully
+  processed**: exactly one `detectForVideo` per delivered frame, and if inference runs
+  long the skipped camera frames are simply never seen — no queue (CLAUDE.md rule 2).
+- **GPU delegate with CPU fallback**: DESIGN wants lite-on-GPU; if GPU init throws
+  (headless CI, odd drivers) the landmarker retries on CPU and the overlay/chip shows
+  which delegate is live. The M0.6 device check judges whether the result is fast enough.
+- **Slot = detection order for M0** — circle-based player binding replaces it in M1.2
+  (noted in code).
+- **Missing `visibility` defaults to 1**: an absent field means "not reported", not
+  "invisible"; gating on a false 0 would wrongly discard whole poses.
+- **MonotonicClock bumps repeats by 1 µs** (MediaPipe VIDEO mode rejects non-increasing
+  timestamps, and the bump survives its internal ms→µs conversion).
+- **The landmarker is injected into LivePoseSource** (structural `VideoLandmarker`
+  type): the loop stays testable and the app owns the landmarker's lifecycle.
+- The live e2e proves the pipeline runs against the fake camera (frames counted on CPU
+  fallback in headless CI); real tracking-speed acceptance is Nick's M0.6 device check.
+
 ## 2026-11-25 — M0.1 — Camera
 
 - **The camera video element is off-screen but rendered** (fixed, left:-10000px), never

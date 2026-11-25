@@ -26,6 +26,8 @@ export type PerAgeMode<T = number> = Readonly<Record<AgeMode, T>>;
 export const CAMERA_WIDTH_PX = 640;
 export const CAMERA_HEIGHT_PX = 480;
 export const CAMERA_TARGET_FPS_HZ = 60;
+/** Two kids play at once; MediaPipe numPoses and the slot count. */
+export const MAX_PLAYERS_COUNT = 2;
 
 // --- Tracking safety (CLAUDE.md rule 6; DESIGN.md "Taming jitter") ----------
 

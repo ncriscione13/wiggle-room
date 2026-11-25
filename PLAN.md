@@ -64,7 +64,7 @@ Acceptance: `npm run check` is green locally and in CI; `npm run dev` shows a pa
 Goal: two kids tracked live, fast enough, with tools to measure it.
 
 - [x] M0.1 Camera: getUserMedia at 640×480, ideal 60 fps, front-facing. Mirrored display. Show the actual resolution and fps in the overlay. Friendly screens for camera denied, no camera found and camera busy.
-- [ ] M0.2 `PoseSource` interface with:
+- [x] M0.2 `PoseSource` interface with:
   - `LivePoseSource`: MediaPipe lite, GPU delegate, VIDEO mode, `numPoses: 2`, exactly one `detectForVideo` per new frame via `requestVideoFrameCallback`, monotonic timestamps
   - `ReplayPoseSource`: plays clips with their original timing
 - [ ] M0.3 Phaser app at 60 fps drawing the latest pose. Rendering never waits for tracking. Test: replay at 2× speed, and drawing still holds 60 fps in Playwright traces.

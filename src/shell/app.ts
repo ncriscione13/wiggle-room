@@ -1,7 +1,9 @@
-// App boot (M0.1+): pick the pose source from the URL, open it, and surface
-// problems with friendly screens. Grows into the full shell over M0/M1.
+// App boot (M0.1/M0.2): pick the pose source from the URL, open it, and
+// surface problems with friendly screens. Grows into the full shell over M0/M1.
 
 import { openCamera, CameraOpenError } from '../tracking/camera';
+import { createPoseLandmarker } from '../tracking/landmarker';
+import { LivePoseSource } from '../tracking/live-pose-source';
 import { sourceConfigFromUrl } from '../tracking/source-config';
 import { mountReplayBadge } from './replay-badge';
 import { renderCameraErrorScreen } from './camera-error-screen';
@@ -17,15 +19,35 @@ export async function bootApp(root: HTMLElement): Promise<void> {
     return;
   }
 
+  let cameraLabel: string;
+  let chip: HTMLElement;
+  let video: HTMLVideoElement;
   try {
     const camera = await openCamera();
-    mountStatusChip(
-      root,
-      'camera-chip',
-      `Camera ${String(camera.widthPx)}×${String(camera.heightPx)} @ ${String(camera.fps)} fps`,
-    );
+    cameraLabel = `${String(camera.widthPx)}×${String(camera.heightPx)} @ ${String(camera.fps)} fps`;
+    chip = mountStatusChip(root, 'camera-chip', `Camera ${cameraLabel} · starting tracking…`);
+    video = camera.video;
   } catch (error) {
     const kind = error instanceof CameraOpenError ? error.kind : 'unknown';
     renderCameraErrorScreen(root, kind);
+    return;
+  }
+
+  try {
+    const handle = await createPoseLandmarker();
+    const live = new LivePoseSource({ video, landmarker: handle.landmarker });
+    live.onError(() => {
+      renderCameraErrorScreen(root, 'unknown');
+    });
+    await live.start();
+    const update = (): void => {
+      const poseCount = live.latest()?.poses.filter((p) => p !== null).length ?? 0;
+      chip.textContent =
+        `Tracking · ${String(live.frames())} frames · ${String(poseCount)} poses · ` +
+        `${cameraLabel} · ${handle.delegate}`;
+    };
+    window.setInterval(update, 500);
+  } catch {
+    renderCameraErrorScreen(root, 'unknown');
   }
 }
