@@ -70,7 +70,8 @@ jobs:
         env:
           BASE_PATH: /${{ github.event.repository.name }}/
       - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      # v3 rejected 2026-11-25: GitHub now requires the v4 artifact backend.
+      - uses: actions/upload-pages-artifact@v4
         with:
           path: dist
       - id: deployment
