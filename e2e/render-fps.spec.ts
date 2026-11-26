@@ -37,6 +37,9 @@ test('drawing holds 60 fps while the two-kid clip replays at 2x', async ({ page 
 // M0.9 acceptance: rendering holds 60 fps WHILE live tracking runs -- the
 // point of moving inference into the worker. A seeded device-check record
 // skips the ladder so this measures steady-state play, not benchmarking.
+// The record's delegate STEERS the worker since the M1 playtest fixes, so it
+// seeds CPU (the default); a GPU seed would run SwiftShader on CI and this
+// very guard would (correctly) catch the render collapse.
 test('rendering holds 60 fps while live tracking runs in the worker', async ({ page }) => {
   test.setTimeout(120_000);
   await page.addInitScript(() => {
@@ -47,7 +50,7 @@ test('rendering holds 60 fps while live tracking runs in the worker', async ({ p
         p99Ms: 14,
         widthPx: 640,
         heightPx: 480,
-        delegate: 'GPU',
+        delegate: 'CPU',
         posesSeen: 2,
         warned: false,
         atMs: 1,
