@@ -48,6 +48,30 @@ export const STARTUP_CHECK_FULL_BODY_S = 1;
 /** A hip straddling mid-screen keeps its previous slot inside this band
  * (fraction of image width around 0.5) -- no boundary flicker. */
 export const PLAYER_SIDE_DEADBAND_RATIO = 0.04;
+
+// --- Start-up check (M1.3; DESIGN start-up check table) ----------------------
+
+/** Worker samples brightness stats this often (stats only, never pixels). */
+export const LUMA_SAMPLE_EVERY_S = 0.5;
+/** Mean luma below this = "It's a bit dark." */
+export const STARTUP_DARK_LUMA_MAX_RATIO = 0.18;
+/** Background brighter than this AND... */
+export const STARTUP_BACKLIGHT_BG_LUMA_MIN_RATIO = 0.75;
+/** ...this much brighter than the body area = "Something bright behind you." */
+export const STARTUP_BACKLIGHT_DELTA_MIN_RATIO = 0.35;
+/** Head-to-ankle span above this fraction of the frame = "too close". */
+export const STARTUP_TOO_CLOSE_SPAN_RATIO = 0.92;
+/** Ankles at/below this image y count as "feet out of frame". */
+export const STARTUP_FEET_EDGE_Y_RATIO = 0.97;
+/** A problem shorter than this is a tracking flicker: it is reported but
+ * does NOT reset the accumulated full-body second (real tracking always
+ * drops single frames; a frame-perfect second would be unreachable). */
+export const STARTUP_BLIP_TOLERANCE_S = 0.2;
+/** Ready also requires the recent problem fraction (~1 s EWMA) below this:
+ * sustained rapid flicker (a dim room, ~0.5 here) must fail even when no
+ * single problem persists past the blip tolerance. Healthy tracking sits
+ * near 0.02-0.05 with occasional clusters to ~0.13 -- 0.2 separates cleanly. */
+export const STARTUP_FLICKER_MAX_RATIO = 0.2;
 /** Passing bar: a kid stepping back in is playing again within this time. */
 export const REJOIN_WITHIN_S = 0.5;
 /** Passing bar: tracking lost under 2% of play time per kid in a lit room. */

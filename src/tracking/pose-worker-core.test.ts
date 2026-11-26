@@ -262,6 +262,40 @@ describe('pose worker core: track replacement (M0.9 review)', () => {
   });
 });
 
+describe('pose worker core: luma sampling cadence (M1.3)', () => {
+  it('attaches brightness stats at most every LUMA_SAMPLE_EVERY_S of frame time', async () => {
+    // Frames 100 ms apart for 1.2 s of frame time -> expect ~3 sampled results.
+    const frames = Array.from({ length: 12 }, (_, i) => makeFrame((i + 1) * 100_000));
+    const h = harness({ frames });
+    let sampleCalls = 0;
+    const core = createWorkerCore({
+      port: { postMessage: (m) => h.sent.push(m) },
+      now: () => 1,
+      createLandmarker: () =>
+        Promise.resolve({ detectForVideo: () => ({ landmarks: [] }), close: vi.fn() }),
+      makeReader: () => h.reader ?? makeScriptedReader([]),
+      sampleLuma: () => {
+        sampleCalls += 1;
+        return { mean: 0.5, cols: 2, rows: 1, cells: [0.4, 0.6] };
+      },
+    });
+    core.onMessage(INIT);
+    await flush();
+    core.onMessage({ type: 'track' }, h.track);
+    await flush();
+    await flush();
+
+    const withLuma = h.sent.filter((m) => m.type === 'result' && m.luma !== undefined);
+    const results = h.sent.filter((m) => m.type === 'result');
+    expect(results.length).toBe(12);
+    expect(sampleCalls).toBeGreaterThanOrEqual(2);
+    expect(sampleCalls).toBeLessThanOrEqual(4);
+    expect(withLuma.length).toBe(sampleCalls);
+    const first = withLuma[0];
+    if (first?.type === 'result') expect(first.luma?.mean).toBe(0.5);
+  });
+});
+
 describe('pose worker core: single frame mode (fallback path, M0.9)', () => {
   it('processes a shipped frame and closes it', async () => {
     const h = harness();

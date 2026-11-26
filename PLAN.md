@@ -111,7 +111,7 @@ Goal: the first complete, fun, two-player game.
   - Side-by-side clip with crossing arms: zero player swaps
   - Walk-out clip: back to Tracked within 0.5 s of being fully in view
 
-- [ ] M1.3 Start-up check: a circle turns green after the kid is seen head to ankles for 1 s. Detects feet out of frame, too close, dark frame (mean brightness), backlight (bright background vs body box) and two kids in one circle, each mapped to its voice line. Tests with the low-visibility clip.
+- [x] M1.3 Start-up check: a circle turns green after the kid is seen head to ankles for 1 s. Detects feet out of frame, too close, dark frame (mean brightness), backlight (bright background vs body box) and two kids in one circle, each mapped to its voice line. Tests with the low-visibility clip.
 - [x] M1.4 Moving/still detector: motion energy in body lengths per second, per-kid still line from calibration, hysteresis, 0.5 s hold. Tests:
   - 30 s still clip: zero false "moved" events
   - Dancing clip: "moving" within 150 ms of motion starting

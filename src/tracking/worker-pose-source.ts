@@ -285,6 +285,7 @@ export class WorkerPoseSource implements InstrumentedPoseSource {
         poses: data.poses,
         inferenceS: data.inferenceMs / 1000,
         frameIntervalS: this.latestFrame === null ? 0 : tS - this.latestFrame.tS,
+        ...(data.luma !== undefined ? { luma: data.luma } : {}),
       };
       this.latestFrame = frame;
       this.frameCount += 1;

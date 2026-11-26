@@ -30,6 +30,53 @@ declare const MediaStreamTrackProcessor:
 
 let fileset: unknown = null;
 
+// Brightness sampler (M1.3): a 32x24 downsample -> mean + 8x6 cell grid.
+// Numbers leave the worker; pixels never do (privacy).
+const LUMA_W = 32;
+const LUMA_H = 24;
+const LUMA_COLS = 8;
+const LUMA_ROWS = 6;
+let lumaCanvas: OffscreenCanvas | null = null;
+let lumaCtx: OffscreenCanvasRenderingContext2D | null = null;
+
+function sampleLuma(
+  frame: unknown,
+): { mean: number; cols: number; rows: number; cells: number[] } | null {
+  try {
+    if (lumaCtx === null) {
+      lumaCanvas = new OffscreenCanvas(LUMA_W, LUMA_H);
+      lumaCtx = lumaCanvas.getContext('2d', { willReadFrequently: true });
+      if (lumaCtx === null) return null;
+    }
+    lumaCtx.drawImage(frame as CanvasImageSource, 0, 0, LUMA_W, LUMA_H);
+    const data = lumaCtx.getImageData(0, 0, LUMA_W, LUMA_H).data;
+    const cellW = LUMA_W / LUMA_COLS;
+    const cellH = LUMA_H / LUMA_ROWS;
+    const cells = new Array<number>(LUMA_COLS * LUMA_ROWS).fill(0);
+    const counts = new Array<number>(LUMA_COLS * LUMA_ROWS).fill(0);
+    let total = 0;
+    for (let y = 0; y < LUMA_H; y += 1) {
+      for (let x = 0; x < LUMA_W; x += 1) {
+        const i = (y * LUMA_W + x) * 4;
+        const luma =
+          (0.2126 * (data[i] ?? 0) + 0.7152 * (data[i + 1] ?? 0) + 0.0722 * (data[i + 2] ?? 0)) /
+          255;
+        total += luma;
+        const cell = Math.floor(y / cellH) * LUMA_COLS + Math.floor(x / cellW);
+        cells[cell] = (cells[cell] ?? 0) + luma;
+        counts[cell] = (counts[cell] ?? 0) + 1;
+      }
+    }
+    for (let c = 0; c < cells.length; c += 1) {
+      const n = counts[c] ?? 1;
+      cells[c] = (cells[c] ?? 0) / n;
+    }
+    return { mean: total / (LUMA_W * LUMA_H), cols: LUMA_COLS, rows: LUMA_ROWS, cells };
+  } catch {
+    return null; // sampling must never break tracking
+  }
+}
+
 const core = createWorkerCore({
   port: {
     postMessage: (m) => {
@@ -38,6 +85,7 @@ const core = createWorkerCore({
   },
   now: () => performance.now(),
   hasTrackProcessor: typeof MediaStreamTrackProcessor !== 'undefined',
+  sampleLuma,
   createLandmarker: async (cfg, delegate) => {
     // useModule: true -- this is a module worker (Vite builds workers as ESM),
     // where importScripts throws; MediaPipe must load its

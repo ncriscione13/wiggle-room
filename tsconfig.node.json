@@ -29,6 +29,7 @@
     "test",
     "src/ui/theme.ts",
     "src/tracking/clip-format.ts",
+    "src/tracking/pose-source.ts",
     "src/motion",
     "src/games/types.ts"
   ]

@@ -5,6 +5,16 @@
 
 import type { ClipPose } from './clip-format';
 
+/** Coarse brightness stats (M1.3): numbers only, never pixels. */
+export interface LumaStats {
+  /** Overall mean luma, 0..1. */
+  mean: number;
+  cols: number;
+  rows: number;
+  /** Row-major cell means, 0..1, length cols×rows. */
+  cells: number[];
+}
+
 export interface PoseFrame {
   /** Seconds on this source's own monotonic clock, starting near 0. */
   tS: number;
@@ -14,6 +24,8 @@ export interface PoseFrame {
   inferenceS: number;
   /** Interval since the previous frame, seconds (0 for the first). */
   frameIntervalS: number;
+  /** Periodic brightness stats (live worker source only; ~every 0.5 s). */
+  luma?: LumaStats;
 }
 
 export type FrameHandler = (frame: PoseFrame) => void;

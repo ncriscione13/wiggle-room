@@ -8,6 +8,7 @@
 import { LatestFrameGate } from './latest-frame-gate';
 import { convertPoseResult, type PoseResultLike } from './live-pose-source';
 import type { ClipPose } from './clip-format';
+import { LUMA_SAMPLE_EVERY_S } from '../motion/config.ts';
 
 /**
  * Timestamp continuity across foreign time bases (M0.9 review finding). The
@@ -70,10 +71,24 @@ export type InMessage =
   | { type: 'detach' }
   | { type: 'close' };
 
+export interface LumaSample {
+  mean: number;
+  cols: number;
+  rows: number;
+  cells: number[];
+}
+
 export type OutMessage =
   | { type: 'ready'; delegate: 'GPU' | 'CPU'; hasMSTP: boolean }
   | { type: 'init-error'; message: string }
-  | { type: 'result'; tMs: number; inferenceMs: number; poses: (ClipPose | null)[] }
+  | {
+      type: 'result';
+      tMs: number;
+      inferenceMs: number;
+      poses: (ClipPose | null)[];
+      /** Attached roughly every LUMA_SAMPLE_EVERY_S (stats, never pixels). */
+      luma?: LumaSample;
+    }
   | { type: 'error'; message: string };
 
 export interface WorkerLandmarker {
@@ -107,12 +122,16 @@ export interface WorkerCoreDeps {
   makeReader(track: TrackLike): ReaderLike;
   /** Whether MediaStreamTrackProcessor exists in this worker (transport pick). */
   hasTrackProcessor?: boolean;
+  /** Brightness sampler (M1.3): called at most every LUMA_SAMPLE_EVERY_S of
+   * frame time, BEFORE the frame is closed. Stats only; may return null. */
+  sampleLuma?(frame: FrameLike): LumaSample | null;
 }
 
 export function createWorkerCore(deps: WorkerCoreDeps): {
   onMessage(message: InMessage, track?: TrackLike, frame?: FrameLike): void;
 } {
   const clock = new ContinuousClock();
+  let lastLumaTMs = -Infinity;
   const gate = new LatestFrameGate<{ frame: FrameLike; tMs: number | null }>((item) => {
     item.frame.close();
   });
@@ -151,8 +170,23 @@ export function createWorkerCore(deps: WorkerCoreDeps): {
       return false;
     }
     const inferenceMs = deps.now() - t0;
+    // Periodic brightness stats, sampled BEFORE the frame is closed (M1.3).
+    let luma: LumaSample | undefined;
+    if (deps.sampleLuma !== undefined && tMs - lastLumaTMs >= LUMA_SAMPLE_EVERY_S * 1000) {
+      const sample = deps.sampleLuma(item.frame);
+      if (sample !== null) {
+        luma = sample;
+        lastLumaTMs = tMs;
+      }
+    }
     item.frame.close();
-    deps.port.postMessage({ type: 'result', tMs, inferenceMs, poses: convertPoseResult(result) });
+    deps.port.postMessage({
+      type: 'result',
+      tMs,
+      inferenceMs,
+      poses: convertPoseResult(result),
+      ...(luma !== undefined ? { luma } : {}),
+    });
     return true;
   };
 

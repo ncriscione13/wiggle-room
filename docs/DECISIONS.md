@@ -2,6 +2,25 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-26 — M1.3 — Start-up check (+ worker luma stats)
+
+- **Brightness comes from the worker as stats, never pixels**: a 32×24 downsample →
+  mean + 8×6 cell grid, sampled at most every 0.5 s, attached to result messages and
+  surfaced as `PoseFrame.luma`. Dark = mean < 0.18; backlight = background cells (outside
+  the body's horizontal band) ≥ 0.75 and ≥ 0.35 brighter than the body band. Sampling
+  failures never break tracking; replay and the main-thread fallback carry no luma, and
+  those two checks simply don't fire there.
+- **Blip tolerance + flicker EWMA**: a frame-perfect continuous second is unreachable on
+  real tracking (the synthetic still clip's 0.8% dropouts pushed ready to ~5 s). A
+  problem shorter than 0.2 s is reported but doesn't reset progress or un-green the
+  circle; ready additionally requires the ~1 s problem-fraction EWMA ≤ 0.2 — so the
+  dim-room clip (≈0.5) can never go ready while healthy clips (≈0.02–0.13 with clusters)
+  green within ~1.2 s and stay green. All three regimes clip-tested.
+- **Problem priority**: crowded → dark → too-close → feet-out → backlight; not-seen as
+  the fallback. Voice line ids exported per problem (`startup.*`) for the M1.6 CSV.
+- **The circle VISUAL mounts with the shell flow (M1.10)** — M1.3 delivers the detection
+  engine + line mapping; there is no screen to host the circles until the flow exists.
+
 ## 2026-11-26 — M1.4 — Moving/still detector (built before M1.3; it needs no luma)
 
 - **Asymmetric timing reconciles PLAN's two requirements**: becoming MOVING confirms in
