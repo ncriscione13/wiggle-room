@@ -2,6 +2,22 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-26 — M1.7 — Buddy avatar (sampler + reactions + geometry + painter)
+
+- **EWMA instead of One Euro for the buddy's draw pose.** One Euro's group delay at
+  constant speed (~v/(2π·cutoff) ≈ 27 ms at 1.8 Hz) swallowed the 30 ms look-ahead — the
+  predicted buddy actually trailed the pose. An exponential smoother trails by exactly
+  v·tau, so the sampler adds tau (BUDDY_POSITION_SMOOTH_S) to the horizon and the lag
+  cancels analytically. The saturating horizon `cap·(1−e^(−dt/cap))` doubles as coasting:
+  the buddy keeps its last motion briefly and settles (max drift = v·0.25 s), never
+  flying off. Game rules never read this pose (DESIGN lag rule 3).
+- **Look is a pure function** `buddyShapes(pose, reaction, color, t) → shapes` in image
+  space; statue shapes ignore the clock entirely (a frozen buddy really freezes — pinned
+  by test). Painter needs only `fillStyle`+`fillCircle` (limbs = circle-noodles along a
+  quadratic), so Phaser Graphics fits structurally and nothing visual escapes unit tests.
+  Giggle breaks the statue latch ("shake off the snow"), cheer overrides hands up,
+  wave is one hand on the live clock. Scene wiring arrives with M1.9/M1.10.
+
 ## 2026-11-26 — M1.6 — Narrator v1 (33 lines / 99 clips, queue rules as a pure core)
 
 - **Clips shipped as 24 kHz mono WAV (21 MB)** — no ffmpeg on this machine, and adding an

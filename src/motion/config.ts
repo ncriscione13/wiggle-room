@@ -116,6 +116,25 @@ export const JUMP_LINE_OF_OWN_HOP_RATIO = 0.5;
 
 /** Buddy is drawn ~30 ms ahead of the latest pose using joint velocity. */
 export const BUDDY_PREDICTION_S = 0.03;
+/** Extrapolation horizon: as a pose goes stale (coasting) the effective
+ * look-ahead saturates at this, so the buddy keeps its last motion briefly
+ * and settles instead of flying off. */
+export const BUDDY_EXTRAPOLATION_CAP_S = 0.25;
+/** Velocity EWMA time constant for the prediction. */
+export const BUDDY_VELOCITY_SMOOTH_S = 0.1;
+/** Position EWMA time constant. An exponential smoother trails a moving
+ * target by exactly v*tau, so the sampler adds tau to its look-ahead and the
+ * lag cancels -- cheaper and more predictable than One Euro for a purely
+ * cosmetic pose. */
+export const BUDDY_POSITION_SMOOTH_S = 0.05;
+/** A buddy pose older than this is drawn but flagged stale. */
+export const BUDDY_FRESH_MAX_AGE_S = 0.25;
+/** Reaction animation lengths. */
+export const BUDDY_GIGGLE_S = 0.8;
+export const BUDDY_CHEER_S = 1.2;
+export const BUDDY_WAVE_S = 1.0;
+/** Statue sparkle ramps in over this long after the freeze latches. */
+export const BUDDY_STATUE_RAMP_S = 0.5;
 
 // --- Lag budget (DESIGN.md "Lag budget" table) -------------------------------
 

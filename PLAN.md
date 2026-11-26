@@ -121,7 +121,7 @@ Goal: the first complete, fun, two-player game.
   - `npm run voice` renders clips with kokoro-js and compresses them
   - Web Audio playback with priority queue, late-praise drop, never the same wording twice, help lines at most every 8 s, music ducking, left/right pan per player, captions
   - Tests for the queue rules
-- [ ] M1.7 Buddy avatar: soft blob character per kid in their color. Mirrors the pose with light smoothing and ~30 ms prediction. Reaction animations: giggle, statue, cheer, wave.
+- [x] M1.7 Buddy avatar: soft blob character per kid in their color. Mirrors the pose with light smoothing and ~30 ms prediction. Reaction animations: giggle, statue, cheer, wave.
 - [ ] M1.8 Timing check ("clap with the drum", 15 s): measures the full audio/visual delay, stores the offset, and applies it to game timing windows and voice cues.
 - [ ] M1.9 Freeze Dance, exactly per DESIGN.md:
   - Dance meters, random stops, grace windows, Little/Big settings
