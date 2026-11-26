@@ -1,0 +1,33 @@
+{
+  "music": {
+    "freeze-mid": {
+      "file": "freeze-mid.wav",
+      "loop": true,
+      "bpm": 108
+    },
+    "freeze-slow": {
+      "file": "freeze-slow.wav",
+      "loop": true,
+      "bpm": 72
+    },
+    "freeze-fast": {
+      "file": "freeze-fast.wav",
+      "loop": true,
+      "bpm": 132
+    }
+  },
+  "sfx": {
+    "drum": {
+      "file": "drum.wav"
+    },
+    "chime": {
+      "file": "chime.wav"
+    },
+    "swirl": {
+      "file": "swirl.wav"
+    },
+    "fanfare": {
+      "file": "fanfare.wav"
+    }
+  }
+}

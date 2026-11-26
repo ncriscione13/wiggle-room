@@ -20,6 +20,7 @@ const UNIT_SUFFIXES = [
   '_PER_S',
   '_PX',
   '_HZ',
+  '_PTS',
   '_DAYS',
   '_COUNT',
   '_COEFF', // dimensioned tuning coefficients (units in the doc comment)

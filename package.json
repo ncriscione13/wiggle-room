@@ -20,6 +20,7 @@
     "e2e": "playwright test",
     "bench": "node tools/bench/run.ts",
     "voice": "node tools/voice-gen/run.ts",
+    "audio": "node tools/audio-gen/run.ts",
     "fetch-models": "node tools/fetch-models.ts",
     "clips:synth": "node tools/clip-synth/run.ts",
     "postinstall": "node tools/copy-mediapipe-wasm.ts",

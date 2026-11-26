@@ -14,25 +14,11 @@ import {
   BUDDY_VELOCITY_SMOOTH_S,
 } from './config.ts';
 import type { PreparedPose } from './frame-prep.ts';
+import type { BuddyPoint, BuddyPose } from '../games/types';
 
-export interface BuddyPoint {
-  x: number;
-  y: number;
-}
-
-export interface BuddyDrawPose {
-  head: BuddyPoint;
-  shoulderL: BuddyPoint;
-  shoulderR: BuddyPoint;
-  handL: BuddyPoint;
-  handR: BuddyPoint;
-  hipMid: BuddyPoint;
-  footL: BuddyPoint;
-  footR: BuddyPoint;
-  bodyLengthImage: number;
-  /** False while the kid is coasting/paused -- the pose is held, not live. */
-  fresh: boolean;
-}
+export type { BuddyPoint };
+/** The games-contract BuddyPose is exactly what the sampler produces. */
+export type BuddyDrawPose = BuddyPose;
 
 type PartName = keyof Omit<BuddyDrawPose, 'bodyLengthImage' | 'fresh'>;
 

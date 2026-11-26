@@ -155,6 +155,12 @@ export const CLAP_MIN_CLOSE_SPEED_BL_PER_S = 1.5;
 /** Hands must separate past this (in BL) before another clap can fire. */
 export const CLAP_REARM_GAP_BL = 0.6;
 
+// --- Arms up (replay gesture + reach events) ---------------------------------
+
+/** Both wrists this far above the hips (in BL) = arms up. The head sits
+ * around 1.45 BL above the hips, so this is "clearly overhead". */
+export const ARMS_UP_WRIST_ABOVE_HIP_BL = 1.3;
+
 // --- Lag budget (DESIGN.md "Lag budget" table) -------------------------------
 
 export const LAG_BUDGET_CAMERA_S = 0.045;
@@ -187,6 +193,15 @@ export const BENCH_MOTION_KIT_P99_MAX_S = 0.002;
 
 /** Hard ceiling; content must stay well under (automated check in M4.2). */
 export const FLASH_CEILING_PER_S = 3;
+
+// --- Audio bus (M1.9) ---------------------------------------------------------
+
+/** Music gain multiplier while the narrator speaks (ducking). */
+export const MUSIC_DUCK_RATIO = 0.3;
+/** Duck ramp time. */
+export const MUSIC_DUCK_RAMP_S = 0.15;
+/** Default music stop/start fade (DESIGN: soft fades). */
+export const MUSIC_FADE_S = 0.4;
 
 // --- Voice (DESIGN.md "Voice guide") -----------------------------------------
 
@@ -267,6 +282,25 @@ export const FREEZE_STOP_S: Range = { min: 3, max: 5 };
 export const FREEZES_PER_ROUND_COUNT: Range = { min: 6, max: 8 };
 /** Every third round plays the slow-motion dance song. */
 export const FREEZE_SLOWMO_ROUND_INTERVAL_COUNT = 3;
+/** Seconds of dancing that fill the dance meter. */
+export const FREEZE_METER_FILL_S = 4;
+/** A moving blip shorter than this during a freeze is a wobble (giggle,
+ * statue kept); longer loses the statue until the kid re-stills. */
+export const FREEZE_WOBBLE_FORGIVE_S: PerAgeMode = { little: 0.6, big: 0.3 };
+/** Big mode: a pose card replaces a plain freeze every Nth stop. */
+export const FREEZE_POSE_CARD_EVERY_COUNT = 2;
+/** Big-mode scoring (points are unitless). */
+export const FREEZE_SCORE_BASE_PTS = 100;
+export const FREEZE_SCORE_REACTION_PENALTY_PTS_PER_S = 100;
+export const FREEZE_SCORE_WOBBLE_PENALTY_PTS = 15;
+export const FREEZE_SCORE_MIN_PTS = 10;
+export const FREEZE_POSE_CARD_BONUS_PTS = 25;
+/** Pose card matching tolerances (on the buddy pose, in BL). */
+export const POSE_CARD_HANDS_HIGH_BL = 1.1;
+export const POSE_CARD_WIDE_HANDS_BL = 1.2;
+export const POSE_CARD_CLOSE_HANDS_BL = 0.5;
+export const POSE_CARD_FEET_APART_BL = 0.5;
+export const POSE_CARD_FOOT_LIFT_BL = 0.35;
 
 // --- Critter Dash (DESIGN.md "Game 2") ---------------------------------------
 

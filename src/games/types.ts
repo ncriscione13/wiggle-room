@@ -60,7 +60,8 @@ export interface MotionEvent {
 export type MotionEventHandler = (event: MotionEvent) => void;
 
 export interface BuddyPoint {
-  /** Normalized 0..1 within the player's half of the screen. */
+  /** Normalized 0..1 across the full camera image (the renderer maps halves
+   * and mirroring). */
   x: number;
   y: number;
 }
@@ -68,21 +69,22 @@ export interface BuddyPoint {
 /**
  * Smoothed, lightly predicted joints for drawing the buddy avatar -- NOT raw
  * landmarks. Produced by the motion kit (M1.7) with ~30 ms prediction.
+ * Eight anchor joints; elbows/knees are synthesized by the blob geometry
+ * (refined from the 14-joint sketch -- see DECISIONS.md, M1.9).
  */
 export interface BuddyPose {
   head: BuddyPoint;
   shoulderL: BuddyPoint;
   shoulderR: BuddyPoint;
-  elbowL: BuddyPoint;
-  elbowR: BuddyPoint;
-  wristL: BuddyPoint;
-  wristR: BuddyPoint;
-  hipL: BuddyPoint;
-  hipR: BuddyPoint;
-  kneeL: BuddyPoint;
-  kneeR: BuddyPoint;
-  ankleL: BuddyPoint;
-  ankleR: BuddyPoint;
+  handL: BuddyPoint;
+  handR: BuddyPoint;
+  hipMid: BuddyPoint;
+  footL: BuddyPoint;
+  footR: BuddyPoint;
+  /** The BL unit in image units (sizes the blob). */
+  bodyLengthImage: number;
+  /** False while coasting/paused: the pose is held, not live. */
+  fresh: boolean;
 }
 
 export interface MotionEvents {
