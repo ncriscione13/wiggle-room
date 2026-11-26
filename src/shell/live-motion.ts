@@ -15,7 +15,7 @@ import {
   createPoseWorker,
   WorkerPoseSource,
 } from '../tracking/worker-pose-source';
-import { loadDeviceCheckRecord } from './device-check';
+import { delegateOrderFromRecord, loadDeviceCheckRecord } from './device-check';
 
 export { CameraOpenError };
 
@@ -39,8 +39,13 @@ export async function createLiveMotion(): Promise<LiveMotion> {
 
   const params = new URLSearchParams(window.location.search);
   const rawDelegate = params.get('delegate');
+  // ?delegate= pin wins; otherwise the device check's measured winner.
   const pinned: readonly ('GPU' | 'CPU')[] | undefined =
-    rawDelegate === 'cpu' ? ['CPU'] : rawDelegate === 'gpu' ? ['GPU'] : undefined;
+    rawDelegate === 'cpu'
+      ? ['CPU']
+      : rawDelegate === 'gpu'
+        ? ['GPU']
+        : delegateOrderFromRecord(stored);
 
   let source;
   let closeExtra: () => void;

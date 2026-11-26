@@ -4,6 +4,7 @@ import type { FrameHandler, PoseFrame, PoseSource } from '../tracking/pose-sourc
 import {
   clearDeviceCheckRecord,
   collectBenchmarkSamples,
+  delegateOrderFromRecord,
   loadDeviceCheckRecord,
   planDeviceCheck,
   saveDeviceCheckRecord,
@@ -33,24 +34,31 @@ describe('planDeviceCheck (M0.6)', () => {
     { widthPx: 480, heightPx: 360 },
     { widthPx: 320, heightPx: 240 },
   ];
+  const reading = (avgS: number, renderFps = 60): { avgS: number; renderFps: number } => ({
+    avgS,
+    renderFps,
+  });
 
   it('fast machine: one step, no reduction, no warning', async () => {
     const sizes: (number | null)[] = [];
     const result = await planDeviceCheck(async (step) => {
       sizes.push(step.widthPx);
-      return Promise.resolve(0.012);
+      return Promise.resolve(reading(0.012));
     }, ladder);
     expect(sizes).toEqual([null]);
     expect(result.warned).toBe(false);
     expect(result.stepsTried).toBe(0);
     expect(result.avgS).toBe(0.012);
+    expect(result.delegate).toBeNull();
   });
 
   it('slow at full size: reduces input and accepts the faster result', async () => {
     const avgBySize: Record<string, number> = { full: 0.031, '480': 0.014 };
     const result = await planDeviceCheck(
       (step) =>
-        Promise.resolve(avgBySize[step.widthPx === null ? 'full' : String(step.widthPx)] ?? 1),
+        Promise.resolve(
+          reading(avgBySize[step.widthPx === null ? 'full' : String(step.widthPx)] ?? 1),
+        ),
       ladder,
     );
     expect(result.stepsTried).toBe(1);
@@ -62,17 +70,149 @@ describe('planDeviceCheck (M0.6)', () => {
     const seen: (number | null)[] = [];
     const result = await planDeviceCheck((step) => {
       seen.push(step.widthPx);
-      return Promise.resolve(0.05);
+      return Promise.resolve(reading(0.05));
     }, ladder);
     expect(seen).toEqual([null, 480, 320]);
     expect(result.warned).toBe(true);
     expect(result.finalStep.widthPx).toBe(320);
   });
 
-  it('worker-era middle ground: above the 20 ms target but under the 43 ms lag line walks the ladder WITHOUT warning (M0.9 review)', async () => {
-    const result = await planDeviceCheck(() => Promise.resolve(0.026), ladder);
+  it('worker-era middle ground: above the 20 ms target but under the 43 ms lag line walks the ladder WITHOUT warning and never bothers the other delegate (M0.9 review)', async () => {
+    const delegates: (string | null)[] = [];
+    const result = await planDeviceCheck(
+      (step) => {
+        delegates.push(step.delegate);
+        return Promise.resolve(reading(0.026));
+      },
+      ladder,
+      undefined,
+      undefined,
+      { altDelegate: 'GPU' },
+    );
     expect(result.stepsTried).toBe(2); // tried to get faster
     expect(result.warned).toBe(false); // but 26 ms does not blow the lag limit
+    expect(delegates).toEqual([null, null, null]); // the delegate phase never ran
+  });
+
+  // Delegate phase (playtest fix 2026-11-26): a machine whose default
+  // delegate blows the LAG line gets the other delegate benchmarked, and it
+  // wins only when it is faster AND rendering holds up (M0.9's "GPU-in-worker
+  // tanks fps" finding is now a per-machine measurement, not a ban).
+
+  it('keeps the other delegate when it is faster and rendering holds', async () => {
+    const steps: (string | null)[] = [];
+    const result = await planDeviceCheck(
+      (step) => {
+        steps.push(step.delegate);
+        return Promise.resolve(step.delegate === 'GPU' ? reading(0.018, 58) : reading(0.098));
+      },
+      ladder,
+      undefined,
+      undefined,
+      { altDelegate: 'GPU' },
+    );
+    expect(steps).toEqual([null, 'GPU']); // no ladder: 18 ms is under the target
+    expect(result.delegate).toBe('GPU');
+    expect(result.finalStep.delegate).toBe('GPU');
+    expect(result.warned).toBe(false);
+    expect(result.avgS).toBeCloseTo(0.018, 6);
+  });
+
+  it('rejects the other delegate when rendering tanks, re-measures the default, and ladders on', async () => {
+    const steps: { delegate: string | null; widthPx: number | null }[] = [];
+    const result = await planDeviceCheck(
+      (step) => {
+        steps.push({ delegate: step.delegate, widthPx: step.widthPx });
+        return Promise.resolve(step.delegate === 'GPU' ? reading(0.018, 24) : reading(0.098));
+      },
+      ladder,
+      undefined,
+      undefined,
+      { altDelegate: 'GPU', minRenderFps: 45 },
+    );
+    expect(steps).toEqual([
+      { delegate: null, widthPx: null },
+      { delegate: 'GPU', widthPx: null },
+      { delegate: null, widthPx: null }, // the default is put back and re-read
+      { delegate: null, widthPx: 480 },
+      { delegate: null, widthPx: 320 },
+    ]);
+    expect(result.delegate).toBeNull();
+    expect(result.warned).toBe(true);
+  });
+
+  it('rejects the other delegate when it is slower, even with fine rendering', async () => {
+    const result = await planDeviceCheck(
+      (step) => Promise.resolve(step.delegate === 'GPU' ? reading(0.15, 60) : reading(0.098)),
+      ladder,
+      undefined,
+      undefined,
+      { altDelegate: 'GPU' },
+    );
+    expect(result.delegate).toBeNull();
+  });
+
+  it('treats a delegate that could not start as infinitely slow (Infinity reading)', async () => {
+    const result = await planDeviceCheck(
+      (step) =>
+        Promise.resolve(
+          step.delegate === 'GPU' ? { avgS: Infinity, renderFps: 0 } : reading(0.098),
+        ),
+      ladder,
+      undefined,
+      undefined,
+      { altDelegate: 'GPU' },
+    );
+    expect(result.delegate).toBeNull();
+    expect(result.warned).toBe(true);
+  });
+
+  it('carries a winning delegate into the size ladder', async () => {
+    const steps: { delegate: string | null; widthPx: number | null }[] = [];
+    const result = await planDeviceCheck(
+      (step) => {
+        steps.push({ delegate: step.delegate, widthPx: step.widthPx });
+        if (step.delegate !== 'GPU') return Promise.resolve(reading(0.098));
+        return Promise.resolve(reading(step.widthPx === null ? 0.03 : 0.019, 58));
+      },
+      ladder,
+      undefined,
+      undefined,
+      { altDelegate: 'GPU' },
+    );
+    // GPU wins (faster + fps fine) but 30 ms is still over the 20 ms target:
+    // the ladder keeps running ON GPU.
+    expect(steps).toEqual([
+      { delegate: null, widthPx: null },
+      { delegate: 'GPU', widthPx: null },
+      { delegate: 'GPU', widthPx: 480 },
+    ]);
+    expect(result.delegate).toBe('GPU');
+    expect(result.finalStep).toMatchObject({ delegate: 'GPU', widthPx: 480 });
+    expect(result.warned).toBe(false);
+  });
+});
+
+describe('delegateOrderFromRecord', () => {
+  const record = (delegate: string): DeviceCheckRecord => ({
+    avgMs: 20,
+    p99Ms: 30,
+    widthPx: 640,
+    heightPx: 480,
+    delegate,
+    posesSeen: 1,
+    warned: false,
+    atMs: 1,
+  });
+
+  it('pins the stored winner first, with the other as fallback', () => {
+    expect(delegateOrderFromRecord(record('GPU'))).toEqual(['GPU', 'CPU']);
+    expect(delegateOrderFromRecord(record('CPU'))).toEqual(['CPU', 'GPU']);
+  });
+
+  it('leaves the default order alone with no record or an unknown value', () => {
+    expect(delegateOrderFromRecord(null)).toBeUndefined();
+    expect(delegateOrderFromRecord(record('weird'))).toBeUndefined();
   });
 });
 

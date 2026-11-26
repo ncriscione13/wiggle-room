@@ -2,6 +2,44 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-26 — M1 playtest round 1 — invisible circles + slow-machine results
+
+Nick's first desk playtest (computer, not the TV yet) surfaced one UX blocker and one
+performance reality; both handled the same day.
+
+- **The circles were invisible.** The start-up check said "Step into your circle!" with
+  no circle anywhere on screen (DESIGN start-up check: "each circle shows the kid's
+  buddy" — never built). The check and warm-up screens now paint the mirrored
+  camera-space stage on a plain 2D canvas: a floor ellipse per slot in the player's
+  color (filling with the head-to-ankles progress, solid green + waving buddy when
+  ready) with each kid's live buddy on top, via the SAME `paintBuddy` the game uses
+  (`BuddyCanvas` was structural for exactly this). New `src/ui/floor-circles.ts` is the
+  single source of truth for circle geometry (constants in config as
+  `FLOOR_CIRCLE_*`), shared by the check, the warm-up, and the debug stage.
+- **The debug stage's circles were on the WRONG sides** — slot 0's circle drew at
+  screen-left while mirroring puts slot 0's kid (image-left half) at screen-RIGHT. A
+  kid "standing in the blue circle" was actually binding to pink. Fixed by the shared
+  module; `floor-circles.test.ts` pins the mirror direction.
+- **Nick's machine: CPU inference 97.7 ms** (vs 36 ms GPU in M0), so the ladder had
+  correctly dropped to 320×240 but the lag budget was still blown ~2.3×. The M0.9
+  CPU-first-in-worker decision assumed "inference cost matches GPU there" — false on
+  this hardware. The device check now runs a **delegate phase**: when the default
+  delegate's average blows the 43 ms WARN line it benches the other delegate once and
+  keeps it only if faster AND rendering held ≥ `DEVICE_CHECK_MIN_RENDER_HZ` (45) during
+  the bench — M0.9's "GPU-in-worker tanked fps" finding is now a per-machine
+  measurement instead of a hardcoded ban. The winner is stored in the existing
+  `record.delegate` field, which boot (app + live-motion) now actually reads
+  (`delegateOrderFromRecord`); `?delegate=` URL pins still override everything and
+  skip the phase. A delegate that fails to init reads as an infinitely slow bench, so
+  the check degrades instead of erroring. Re-measure any machine with `?recheck=1`.
+- **The overlay's "motion kit: arrives in M1" was stale** — M1 shipped and the row
+  never got wired. The debug stage now runs the real `MotionKit` beside the skeleton
+  view: the row shows avg/p99 per-frame kit cost, and the event log gains live
+  still/moving/armsUp events and tracking transitions (useful for Nick's TV debugging).
+- Tests: 396 unit (+17), e2e asserts the check-stage canvas is visible. A probe of
+  CPU-vs-GPU on Nick's machine via headed Chrome was attempted but the windows were
+  closed (kids at the computer) — the adaptive check makes the probe unnecessary.
+
 ## 2026-11-26 — M1 fresh-eyes review — all findings applied
 
 - **Blocker found and fixed: two clocks.** Live pose sources zero-base their time; the

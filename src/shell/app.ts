@@ -4,6 +4,7 @@
 
 import { openCamera, CameraOpenError, type CameraHandle } from '../tracking/camera';
 import { DEVICE_CHECK_DURATION_S, DEVICE_CHECK_WARN_S } from '../motion/config';
+import { MotionKit } from '../motion/kit';
 import {
   createLiveTransport,
   createPoseWorker,
@@ -12,6 +13,7 @@ import {
 import {
   clearDeviceCheckRecord,
   collectBenchmarkSamples,
+  delegateOrderFromRecord,
   loadDeviceCheckRecord,
   planDeviceCheck,
   renderSlowDeviceWarning,
@@ -19,6 +21,8 @@ import {
   shouldUpgradeBenchmark,
   summarizeSamples,
   type BenchmarkSamples,
+  type BenchReading,
+  type DeviceCheckStep,
 } from './device-check';
 import { createPoseLandmarker } from '../tracking/landmarker';
 import { LivePoseSource } from '../tracking/live-pose-source';
@@ -30,6 +34,7 @@ import type { ClipFile } from '../tracking/clip-format';
 import type { InstrumentedPoseSource, PoseSource } from '../tracking/pose-source';
 import { mountPoseStage, type PoseStage } from '../ui/pose-stage';
 import { mountDebugOverlay, type DebugOverlay } from '../debug/overlay';
+import { RollingStats } from '../debug/stats';
 import { mountDevTools } from '../debug/dev-tools';
 import { isRecorderEnabled } from '../debug/recorder';
 import { mountReplayBadge } from './replay-badge';
@@ -71,13 +76,23 @@ interface LiveFactory {
   close(): void;
 }
 
-async function createLiveFactory(): Promise<LiveFactory> {
-  // Tuning knobs: ?delegate=cpu|gpu pins the worker's inference delegate;
+async function createLiveFactory(pin: 'GPU' | 'CPU' | null = null): Promise<LiveFactory> {
+  // Delegate order: the ?delegate=cpu|gpu URL knob always wins; then an
+  // explicit pin (the device check trying the other delegate); then the
+  // stored check's winner; then the CPU-first default.
   // ?transport=bitmap forces the rVFC/ImageBitmap fallback transport.
   const params = new URLSearchParams(window.location.search);
   const rawDelegate = params.get('delegate');
   const pinned: readonly ('GPU' | 'CPU')[] | undefined =
-    rawDelegate === 'cpu' ? ['CPU'] : rawDelegate === 'gpu' ? ['GPU'] : undefined;
+    rawDelegate === 'cpu'
+      ? ['CPU']
+      : rawDelegate === 'gpu'
+        ? ['GPU']
+        : pin === 'GPU'
+          ? ['GPU', 'CPU']
+          : pin === 'CPU'
+            ? ['CPU', 'GPU']
+            : delegateOrderFromRecord(loadDeviceCheckRecord());
   const forceBitmap = params.get('transport') === 'bitmap';
   try {
     const handle = await createPoseWorker(
@@ -123,12 +138,37 @@ function startStageSession(
 ): StageSession {
   root.querySelector('.wr-start')?.remove();
   const stage = mountPoseStage(root, source);
-  const overlay = mountDebugOverlay(root, { source, stage, sourceLabel: label });
+  // The SHIPPED motion kit runs on the stage too, so the overlay's "motion
+  // kit" row and event log measure the real pipeline, not a placeholder.
+  const kit = new MotionKit(() => source.latest()?.tS ?? 0);
+  const kitMs = new RollingStats(120);
+  const overlay = mountDebugOverlay(root, {
+    source,
+    stage,
+    sourceLabel: label,
+    motionMs: () => (kitMs.count() === 0 ? null : { avgMs: kitMs.mean(), p99Ms: kitMs.p99() }),
+  });
+  const offKitEvents = (['jump', 'step', 'squat', 'still', 'moving', 'armsUp'] as const).map(
+    (name) =>
+      kit.on(name, (event) => {
+        overlay.events.push(`${event.name} · slot ${String(event.slot)}`, event.tS);
+      }),
+  );
+  const offKitFrames = source.onFrame((frame) => {
+    const t0 = performance.now();
+    const playersFrame = kit.update(frame.tS, frame.poses);
+    kitMs.push(performance.now() - t0);
+    for (const t of playersFrame.transitions) {
+      overlay.events.push(`slot ${String(t.slot)}: ${t.from} → ${t.to}`, frame.tS);
+    }
+  });
   const s: StageSession = {
     source,
     stage,
     overlay,
     destroy(): void {
+      offKitFrames();
+      for (const off of offKitEvents) off();
       overlay.destroy();
       stage.destroy();
       source.stop();
@@ -334,7 +374,9 @@ export async function bootApp(root: HTMLElement): Promise<void> {
   let factory: LiveFactory | null = null;
   try {
     factory = await createLiveFactory();
-    const f = factory;
+    // The CURRENT factory: the device check may swap it to try the other
+    // delegate, so closures read this binding, never a snapshot.
+    let fac = factory;
 
     /** Mid-session tracking failure: release everything, then the screen
      * (M0.9 review -- no webcam LED or ticking chip behind an error). */
@@ -345,14 +387,14 @@ export async function bootApp(root: HTMLElement): Promise<void> {
         liveTeardown();
       } else {
         chip.remove();
-        f.close();
+        fac.close();
       }
       renderCameraErrorScreen(root, 'model');
     };
 
-    let trackingLabel = `${f.delegate}·${f.locus}`;
+    let trackingLabel = `${fac.delegate}·${fac.locus}`;
     const attach = async (cam: CameraHandle): Promise<InstrumentedPoseSource> => {
-      const made = f.make(cam);
+      const made = fac.make(cam);
       const live = made.source;
       live.onError(failLive);
       const s = startStageSession(root, live, labelOf(cam), () => {
@@ -360,7 +402,7 @@ export async function bootApp(root: HTMLElement): Promise<void> {
       });
       await live.start();
       trackingLabel =
-        f.locus === 'worker' ? `${f.delegate}·worker(${made.mode()})` : `${f.delegate}·main`;
+        fac.locus === 'worker' ? `${fac.delegate}·worker(${made.mode()})` : `${fac.delegate}·main`;
       s.overlay.events.push(`tracking started · ${trackingLabel}`, 0);
       return live;
     };
@@ -379,20 +421,60 @@ export async function bootApp(root: HTMLElement): Promise<void> {
 
     // M0.6: first-run device check (skipped once a record exists). A bench
     // that can't finish (source stopped) aborts without saving a record.
+    // When the default delegate blows the lag WARN line, the OTHER delegate
+    // gets one bench and wins only if faster with rendering intact (playtest
+    // fix 2026-11-26: a 98 ms CPU machine must at least TRY its GPU).
     if (loadDeviceCheckRecord() === null) {
       try {
         let finalBench: BenchmarkSamples = { samplesS: [], maxPoses: 0 };
-        const outcome = await planDeviceCheck(async (step) => {
-          if (step.widthPx !== null && step.heightPx !== null) {
+        let currentDelegate: 'GPU' | 'CPU' | null = null;
+
+        const cameraSizeOf = (step: DeviceCheckStep): { widthPx?: number; heightPx?: number } =>
+          step.widthPx !== null && step.heightPx !== null
+            ? { widthPx: step.widthPx, heightPx: step.heightPx }
+            : {};
+
+        const runStep = async (step: DeviceCheckStep): Promise<BenchReading> => {
+          if (step.delegate !== currentDelegate) {
             session?.destroy(); // stops live + stage + overlay + that camera
+            fac.close();
+            currentDelegate = step.delegate;
+            let swapped: LiveFactory;
+            try {
+              swapped = await createLiveFactory(step.delegate);
+            } catch {
+              // This delegate cannot start at all: restore the default and
+              // report an infinitely slow reading (the planner keeps CPU).
+              currentDelegate = null;
+              swapped = await createLiveFactory(null);
+              fac = swapped;
+              factory = swapped;
+              camera = await openCamera(cameraSizeOf(step));
+              live = await attach(camera);
+              return { avgS: Infinity, renderFps: 0 };
+            }
+            fac = swapped;
+            factory = swapped;
+            camera = await openCamera(cameraSizeOf(step));
+            live = await attach(camera);
+          } else if (step.widthPx !== null && step.heightPx !== null) {
+            session?.destroy();
             camera = await openCamera({ widthPx: step.widthPx, heightPx: step.heightPx });
             live = await attach(camera);
           }
-          chip.textContent = `Device check… · ${labelOf(camera)}`;
+          chip.textContent = `Device check… · ${labelOf(camera)} · ${fac.delegate}`;
           const bench = await collectBenchmarkSamples(live, DEVICE_CHECK_DURATION_S);
           if (bench === null) throw new BenchAborted('benchmark source stopped');
           finalBench = bench;
-          return summarizeSamples(bench.samplesS).avgS;
+          return {
+            avgS: summarizeSamples(bench.samplesS).avgS,
+            renderFps: session?.stage.actualFps() ?? 0,
+          };
+        };
+
+        const urlPinned = new URLSearchParams(window.location.search).get('delegate') !== null;
+        const outcome = await planDeviceCheck(runStep, undefined, undefined, undefined, {
+          altDelegate: urlPinned ? null : fac.delegate === 'CPU' ? 'GPU' : 'CPU',
         });
 
         const summary = summarizeSamples(finalBench.samplesS);
@@ -401,14 +483,14 @@ export async function bootApp(root: HTMLElement): Promise<void> {
           p99Ms: round1(summary.p99S * 1000),
           widthPx: camera.widthPx,
           heightPx: camera.heightPx,
-          delegate: f.delegate,
+          delegate: fac.delegate,
           posesSeen: finalBench.maxPoses,
           warned: outcome.warned,
           atMs: Date.now(),
         });
         session?.overlay.events.push(
           `device check · avg ${round1(outcome.avgS * 1000).toFixed(1)} ms · ` +
-            `${String(finalBench.maxPoses)} poses @ ${labelOf(camera)}`,
+            `${String(finalBench.maxPoses)} poses @ ${labelOf(camera)} · ${fac.delegate}`,
           0,
         );
         if (outcome.warned) renderSlowDeviceWarning(root);
@@ -418,7 +500,7 @@ export async function bootApp(root: HTMLElement): Promise<void> {
         if (session?.source !== live) {
           // Something else (a dropped clip) took over mid-check; stand down.
           chip.remove();
-          f.close();
+          fac.close();
           return;
         }
       }
@@ -478,7 +560,7 @@ export async function bootApp(root: HTMLElement): Promise<void> {
       window.clearInterval(chipInterval);
       offUpgrade();
       chip.remove();
-      f.close();
+      fac.close();
       liveTeardown = null;
     };
   } catch (error) {

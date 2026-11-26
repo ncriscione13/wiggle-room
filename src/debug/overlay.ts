@@ -17,6 +17,8 @@ export interface DebugOverlayDeps {
   stage: PoseStage;
   /** Extra line about the input, e.g. camera settings or clip name. */
   sourceLabel: string;
+  /** Per-frame motion-kit cost, when a kit is running (null before frames). */
+  motionMs?: () => { avgMs: number; p99Ms: number } | null;
 }
 
 export interface DebugOverlay {
@@ -93,7 +95,9 @@ export function mountDebugOverlay(root: HTMLElement, deps: DebugOverlayDeps): De
       deps.source.kind === 'live'
         ? `${ms(inferenceMs.mean())} (p99 ${ms(inferenceMs.p99())})`
         : '0.0 ms (replay)';
-    motionValue.textContent = 'arrives in M1';
+    const motion = deps.motionMs?.() ?? null;
+    motionValue.textContent =
+      motion === null ? 'waiting for frames…' : `${ms(motion.avgMs)} (p99 ${ms(motion.p99Ms)})`;
     // Whole-frame time (1000/fps). Draw-stage-only ms needs instrumentation
     // Phaser doesn't expose; logged in DECISIONS (M0 review).
     const fps = deps.stage.actualFps();

@@ -253,6 +253,7 @@ export async function bootPlay(root: HTMLElement): Promise<void> {
         for (const [slot, checker] of checkers) {
           const status = checker.update(tS, frame.players[slot], luma);
           screen.setStatus(slot, status.problem, status.progress01);
+          screen.setPose(slot, lm.kit.pose(slot), tS);
           if (status.ready) readySinceS.set(slot, readySinceS.get(slot) ?? tS);
           else readySinceS.delete(slot);
           // Help lines only for circles we are still waiting on.
@@ -313,12 +314,16 @@ export async function bootPlay(root: HTMLElement): Promise<void> {
       slots,
       modes: [profileForSlot(0).mode, profileForSlot(1).mode],
     });
-    const screen = warmupScreen(root);
+    const screen = warmupScreen(
+      root,
+      slots.map((slot) => toPlayerInfo(profileForSlot(slot), slot)),
+    );
     const calibrations = await new Promise<(Calibration | null)[]>((resolve) => {
       const offTap = lm.onFrame((tS, frame) => {
         for (const slot of slots) {
           const view = frame.players[slot];
           if (view.pose !== null && view.seenNow) flow.push(slot, view.pose, tS);
+          screen.setPose(slot, lm.kit.pose(slot), tS);
         }
         for (const d of flow.tick(tS)) {
           if (d.type === 'say') voice.say(d.lineId);

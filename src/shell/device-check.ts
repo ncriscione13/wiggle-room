@@ -7,6 +7,7 @@
 import {
   CAMERA_FALLBACK_HEIGHTS_PX,
   CAMERA_FALLBACK_WIDTHS_PX,
+  DEVICE_CHECK_MIN_RENDER_HZ,
   DEVICE_CHECK_TRACKING_MAX_S,
   DEVICE_CHECK_WARN_S,
 } from '../motion/config';
@@ -98,6 +99,17 @@ export interface DeviceCheckStep {
   /** null = the default (full) camera size. */
   widthPx: number | null;
   heightPx: number | null;
+  /** Explicit delegate for this step; null = the factory's default order. */
+  delegate: 'GPU' | 'CPU' | null;
+}
+
+/** What one benchmark run reports back. A delegate that could not start at
+ * all reads as { avgS: Infinity, renderFps: 0 } (never throw for that -- a
+ * thrown error means the whole check must abort). */
+export interface BenchReading {
+  avgS: number;
+  /** Render fps observed while this bench ran -- how much drawing suffered. */
+  renderFps: number;
 }
 
 export interface DeviceCheckOutcome {
@@ -105,32 +117,64 @@ export interface DeviceCheckOutcome {
   stepsTried: number;
   finalStep: DeviceCheckStep;
   warned: boolean;
+  /** Delegate the app should keep using; null = the factory default order. */
+  delegate: 'GPU' | 'CPU' | null;
+}
+
+export interface DelegateOptions {
+  /** The other delegate to try when the default blows the WARN line; null
+   * disables the phase (e.g. a ?delegate= URL pin is in force). */
+  altDelegate?: 'GPU' | 'CPU' | null;
+  minRenderFps?: number;
 }
 
 /**
- * Walks the benchmark: full size first, then down the ladder while above the
- * TARGET (`maxS`, the aspirational 20 ms). The parent-facing WARNING fires
- * only above `warnS` — the worker-era line where total lag would blow the
- * 120 ms hard limit (M0.9 review: rendering is off the hook; only latency
- * matters now).
+ * Walks the benchmark. Full size on the default delegate first; when that
+ * blows the lag WARN line (`warnS` -- total lag past the 120 ms hard limit),
+ * the OTHER delegate gets one bench and wins only if it is faster AND kept
+ * rendering above `minRenderFps` (M0.9 measured GPU-in-worker starving the
+ * renderer; that finding is now a per-machine measurement, not a ban). Then
+ * the camera-size ladder runs while above the TARGET (`maxS`, the
+ * aspirational 20 ms), on whichever delegate won.
  */
 export async function planDeviceCheck(
-  run: (step: DeviceCheckStep) => Promise<number>,
+  run: (step: DeviceCheckStep) => Promise<BenchReading>,
   ladder: readonly FallbackSize[] = CAMERA_FALLBACK_LADDER,
   maxS: number = DEVICE_CHECK_TRACKING_MAX_S,
   warnS: number = DEVICE_CHECK_WARN_S,
+  options: DelegateOptions = {},
 ): Promise<DeviceCheckOutcome> {
-  let step: DeviceCheckStep = { index: 0, widthPx: null, heightPx: null };
-  let avgS = await run(step);
+  const alt = options.altDelegate ?? null;
+  const minRenderFps = options.minRenderFps ?? DEVICE_CHECK_MIN_RENDER_HZ;
+
+  let delegate: 'GPU' | 'CPU' | null = null;
+  let step: DeviceCheckStep = { index: 0, widthPx: null, heightPx: null, delegate: null };
+  let avgS = (await run(step)).avgS;
+
+  if (avgS > warnS && alt !== null) {
+    const altStep: DeviceCheckStep = { index: 0, widthPx: null, heightPx: null, delegate: alt };
+    const altReading = await run(altStep);
+    if (altReading.avgS < avgS && altReading.renderFps >= minRenderFps) {
+      delegate = alt;
+      step = altStep;
+      avgS = altReading.avgS;
+    } else {
+      // Put the default back (the alt bench reconfigured the app) and use
+      // the fresh reading -- never a stale number from before the swap.
+      step = { index: 0, widthPx: null, heightPx: null, delegate: null };
+      avgS = (await run(step)).avgS;
+    }
+  }
+
   let tried = 0;
   while (avgS > maxS && tried < ladder.length) {
     const size = ladder[tried];
     tried += 1;
     if (size === undefined) break;
-    step = { index: tried, widthPx: size.widthPx, heightPx: size.heightPx };
-    avgS = await run(step);
+    step = { index: tried, widthPx: size.widthPx, heightPx: size.heightPx, delegate };
+    avgS = (await run(step)).avgS;
   }
-  return { avgS, stepsTried: tried, finalStep: step, warned: avgS > warnS };
+  return { avgS, stepsTried: tried, finalStep: step, warned: avgS > warnS, delegate };
 }
 
 // --- Stored record -----------------------------------------------------------
@@ -181,6 +225,16 @@ export function saveDeviceCheckRecord(
  * the full check + input-size ladder again under current conditions. */
 export function clearDeviceCheckRecord(store: KeyValueStore = browserStore): void {
   store.set(RECORD_KEY, '');
+}
+
+/** Boot-time delegate order: the stored check's winner first, the other as
+ * fallback. Undefined (no record / unknown value) keeps the factory default. */
+export function delegateOrderFromRecord(
+  record: DeviceCheckRecord | null,
+): readonly ('GPU' | 'CPU')[] | undefined {
+  if (record?.delegate === 'GPU') return ['GPU', 'CPU'];
+  if (record?.delegate === 'CPU') return ['CPU', 'GPU'];
+  return undefined;
 }
 
 // --- Parent-facing warning ---------------------------------------------------

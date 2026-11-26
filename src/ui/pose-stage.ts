@@ -6,6 +6,7 @@ import Phaser from 'phaser';
 import { POSE, POSE_CONNECTIONS, type ClipPose } from '../tracking/clip-format';
 import type { PoseSource } from '../tracking/pose-source';
 import { VISIBILITY_MIN_RATIO } from '../motion/config';
+import { floorCircleScreen } from './floor-circles';
 import { colors, phaserColor, playerColors } from './theme';
 import { toStageX, toStageY } from './stage-math';
 
@@ -40,14 +41,16 @@ class StageScene extends Phaser.Scene {
     });
   }
 
-  /** Debug aid until M1.2 maps the real taped circles: slot 0 left half,
-   * slot 1 right half, near the floor line. */
+  /** Shared floor-circle geometry, mirrored like the skeletons: slot 0 owns
+   * the image-left half, which is the SCREEN-RIGHT half (playtest fix -- this
+   * used to draw slot 0's circle on the wrong side). */
   private drawFloorCircles(gfx: Phaser.GameObjects.Graphics): void {
-    const y = STAGE_H * 0.88;
+    const vp = { x: 0, y: 0, width: STAGE_W, height: STAGE_H, mirrored: true };
     for (const slot of [0, 1] as const) {
       const token = playerColors[slot];
+      const c = floorCircleScreen(slot, vp);
       gfx.lineStyle(5, phaserColor(colors[token]), 0.6);
-      gfx.strokeEllipse(STAGE_W * (slot === 0 ? 0.25 : 0.75), y, 340, 110);
+      gfx.strokeEllipse(c.cx, c.cy, c.rx * 2, c.ry * 2);
     }
   }
 

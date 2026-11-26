@@ -69,6 +69,21 @@ export function cssRgb(hex: string): string {
   return `rgb(${String(r)}, ${String(g)}, ${String(b)})`;
 }
 
+/** Token + alpha -> CSS rgba(), for canvas fills that need transparency. */
+export function cssRgba(hex: string, alpha01: number): string {
+  const { r, g, b } = hexToRgb(hex);
+  return `rgba(${String(r)}, ${String(g)}, ${String(b)}, ${String(alpha01)})`;
+}
+
+/** Phaser numeric color (0xRRGGBB) + alpha -> CSS rgba(). Lets a plain 2D
+ * canvas accept the same numeric colors Phaser Graphics takes. */
+export function cssRgbaFromNumber(color: number, alpha01: number): string {
+  const r = Math.floor(color / 65536) % 256;
+  const g = Math.floor(color / 256) % 256;
+  const b = color % 256;
+  return `rgba(${String(r)}, ${String(g)}, ${String(b)}, ${String(alpha01)})`;
+}
+
 /** Number -> CSS px string (keeps numbers out of template literals elsewhere). */
 export function px(n: number): string {
   return `${String(n)}px`;

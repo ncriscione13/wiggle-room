@@ -136,6 +136,21 @@ export const BUDDY_WAVE_S = 1.0;
 /** Statue sparkle ramps in over this long after the freeze latches. */
 export const BUDDY_STATUE_RAMP_S = 0.5;
 
+// --- Floor circles (DESIGN "two colored floor circles ... match the two
+// --- halves of the screen"; shared by the debug stage, the start-up check
+// --- and games so every screen agrees where a circle is) ---------------------
+
+/** Circle centers in IMAGE space, indexed by slot. Slot 0 owns the image-LEFT
+ * half, which lands on the screen-RIGHT after mirroring. */
+export const FLOOR_CIRCLE_CENTER_X_IMAGE_RATIO: readonly [number, number] = [0.25, 0.75];
+/** Vertical center: near the floor line of a typical framing. */
+export const FLOOR_CIRCLE_CENTER_Y_IMAGE_RATIO = 0.82;
+/** Horizontal radius, as a fraction of image width (~a taped 2 ft circle at
+ * play distance). */
+export const FLOOR_CIRCLE_RX_IMAGE_RATIO = 0.11;
+/** Vertical/horizontal radius ratio: a circle on the floor seen at an angle. */
+export const FLOOR_CIRCLE_RY_PER_RX_RATIO = 0.32;
+
 // --- Timing check (M1.8; DESIGN "clap with the drum") ------------------------
 
 /** Length of the clap-along test. */
@@ -181,6 +196,11 @@ export const DEVICE_CHECK_TRACKING_MAX_S = 0.02;
 export const DEVICE_CHECK_WARN_S = 0.043;
 /** First-run benchmark length. */
 export const DEVICE_CHECK_DURATION_S = 5;
+/** When the primary delegate's latency blows the WARN line, the check tries
+ * the other delegate -- but only keeps it while rendering holds this many
+ * frames/second (M0.9 measured GPU-in-worker starving Phaser to 24 fps on one
+ * laptop; this turns that finding into a per-machine measurement, not a ban). */
+export const DEVICE_CHECK_MIN_RENDER_HZ = 45;
 /** Input-size reduction ladder when tracking is too slow (paired by index). */
 export const CAMERA_FALLBACK_WIDTHS_PX: readonly number[] = [480, 320];
 export const CAMERA_FALLBACK_HEIGHTS_PX: readonly number[] = [360, 240];

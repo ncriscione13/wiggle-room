@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test';
 
 // M0.4: the debug overlay toggles with D and shows per-stage timings, fps and
-// the last events.
+// the last events. Since the M1 playtest fixes, the motion-kit row shows REAL
+// per-frame cost (the kit runs on the stage), not the old placeholder text.
 
 test('D toggles the overlay; it shows timings, fps and events', async ({ page }) => {
   await page.goto('/?clip=still-30s');
@@ -16,7 +17,9 @@ test('D toggles the overlay; it shows timings, fps and events', async ({ page })
 
   await expect(overlay.getByTestId('overlay-camera-ms')).toContainText('ms', { timeout: 10000 });
   await expect(overlay.getByTestId('overlay-inference-ms')).toContainText('ms');
-  await expect(overlay.getByTestId('overlay-motion-ms')).toContainText('M1');
+  // Real measured numbers: "<avg> ms (p99 <p99> ms)" once frames have flowed.
+  await expect(overlay.getByTestId('overlay-motion-ms')).toContainText('p99', { timeout: 10000 });
+  await expect(overlay.getByTestId('overlay-motion-ms')).toContainText('ms');
   await expect(overlay.getByTestId('overlay-render-fps')).toContainText('fps');
   await expect(overlay.getByTestId('overlay-events')).toContainText('replay started');
   await expect(overlay.getByTestId('overlay-events')).toContainText('pose found');

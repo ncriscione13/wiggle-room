@@ -367,3 +367,23 @@ motion clock — was invisible to every module test; a kit→core seam test now 
 
 **Stopped and waiting** for your TV numbers and playtest notes before starting
 Phase M2 (Critter Dash).
+
+### Playtest round 1 — desk results, fixes shipped (2026-11-26)
+
+Nick's desk run (not the TV): circles were invisible at the check, and the debug
+line showed CPU inference at 97.7 ms (320×240 after the ladder). Fixed same day
+(see DECISIONS "M1 playtest round 1"):
+
+- Check + warm-up screens now show the mirrored stage: each kid's floor circle
+  (fills green when seen head-to-toe) with their live buddy inside it.
+- Debug-stage circles were mirrored onto the WRONG sides; now shared geometry.
+- Device check got a delegate phase: a machine whose default delegate blows the
+  43 ms lag line benches the other one and keeps the winner (render fps
+  guarded). The winner is stored and used on every later boot.
+- Overlay "motion kit" row is real now (was the stale "arrives in M1" text),
+  and the event log shows live still/moving/armsUp + tracking transitions.
+
+**After this deploys:** on any machine that already ran the app once, open
+`/?recheck=1` (and stand in view while it measures) so the check can re-pick
+the camera size AND delegate; the old stored record keeps the old config
+otherwise. Then the TV list above stands as written.

@@ -60,6 +60,9 @@ test('live flow: empty room stops at the start-up check with a friendly ask', as
   await page.goto('/?play=1'); // fake camera: frames, but no humans
   await page.getByTestId('pick-1').click();
   await expect(page.getByTestId('check-screen')).toBeVisible({ timeout: 60_000 });
+  // Playtest fix: the mirrored stage with the floor circles is on screen, so
+  // a kid can SEE which circle to step into.
+  await expect(page.getByTestId('check-stage')).toBeVisible();
   // The checker reports the empty room as not-seen with the circle ask.
   await expect(page.getByTestId('check-problem-0')).toContainText('Step into your circle', {
     timeout: 30_000,
