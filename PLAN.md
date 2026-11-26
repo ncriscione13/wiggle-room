@@ -115,7 +115,7 @@ Goal: the first complete, fun, two-player game.
 - [x] M1.4 Moving/still detector: motion energy in body lengths per second, per-kid still line from calibration, hysteresis, 0.5 s hold. Tests:
   - 30 s still clip: zero false "moved" events
   - Dancing clip: "moving" within 150 ms of motion starting
-- [ ] M1.5 Warm-up calibration: the 7 moves in DESIGN.md, for both kids at once. Two tries, then a slower demo, then skip to the age-mode default. Results saved to the profile in localStorage. Tests check each measurement against the synthetic clips within a tolerance.
+- [x] M1.5 Warm-up calibration: the 7 moves in DESIGN.md, for both kids at once. Two tries, then a slower demo, then skip to the age-mode default. Results saved to the profile in localStorage. Tests check each measurement against the synthetic clips within a tolerance.
 - [ ] M1.6 Narrator v1:
   - `voice/lines.en.csv` (id, priority, 3–5 wordings) covering the start-up check, warm-up, Freeze Dance and wrap-up moments in DESIGN.md
   - `npm run voice` renders clips with kokoro-js and compresses them

@@ -2,6 +2,22 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-26 — M1.5 — Warm-up measurements, plan, profiles
+
+- **Each move is a batch extractor over its window's prepared frames** with an `ok`
+  plausibility flag (hops need ≥2 hysteresis-gated rises, run needs ≥4 steps, squat needs
+  a real dip…), clip-tested against the synthetic clips' authored geometry: body size
+  0.17, hip height 1.6 BL, reach ~1.9 BL (my first test bound assumed 2.0+ — the authored
+  skeleton says 1.9; test corrected to the geometry), span ~2.35 BL, squat 0.55, hop
+  ~0.32 BL, step rates within 10% on both cadences.
+- **The plan is a pure reducer**: try → try → slow demo → age default, per move; the
+  age-default table (`WARMUP_DEFAULT_CALIBRATION_TABLE`, mixed-unit `_TABLE` suffix)
+  fills every Calibration field on skip. Both-kids pacing and the guided visuals mount
+  with the M1.10 flow.
+- **Storage extracted to `src/shell/storage.ts`** (shared by device-check and the new
+  profiles module; device-check re-exports for compatibility). Profiles persist id,
+  name, color token, age mode and calibration under `wiggle.profiles.v1`.
+
 ## 2026-11-26 — M1.3 — Start-up check (+ worker luma stats)
 
 - **Brightness comes from the worker as stats, never pixels**: a 32×24 downsample →

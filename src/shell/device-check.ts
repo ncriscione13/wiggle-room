@@ -135,28 +135,10 @@ export async function planDeviceCheck(
 
 // --- Stored record -----------------------------------------------------------
 
-export interface KeyValueStore {
-  get(key: string): string | null;
-  set(key: string, value: string): void;
-}
-
-/** localStorage with every access guarded (private mode, blocked storage...). */
-export const browserStore: KeyValueStore = {
-  get(key: string): string | null {
-    try {
-      return localStorage.getItem(key);
-    } catch {
-      return null;
-    }
-  },
-  set(key: string, value: string): void {
-    try {
-      localStorage.setItem(key, value);
-    } catch {
-      // Storage unavailable: the check will simply run again next launch.
-    }
-  },
-};
+// Storage lives in ./storage (shared with profiles); re-exported here so
+// existing imports keep working.
+export { browserStore, type KeyValueStore } from './storage';
+import { browserStore, type KeyValueStore } from './storage';
 
 const RECORD_KEY = 'wiggle.device-check.v1';
 

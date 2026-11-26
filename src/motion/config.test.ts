@@ -23,6 +23,7 @@ const UNIT_SUFFIXES = [
   '_DAYS',
   '_COUNT',
   '_COEFF', // dimensioned tuning coefficients (units in the doc comment)
+  '_TABLE', // mixed-unit structured tables (per-field units in the doc comment)
 ] as const;
 
 function isRange(v: unknown): v is Range {
@@ -44,6 +45,10 @@ function leafNumbers(name: string, v: unknown): number[] {
   }
   if (isPerAgeMode(v)) {
     return [...leafNumbers(`${name}.little`, v.little), ...leafNumbers(`${name}.big`, v.big)];
+  }
+  if (typeof v === 'object' && v !== null) {
+    // Structured tables (_TABLE suffix): every leaf must still be a number.
+    return Object.entries(v).flatMap(([k, child]) => leafNumbers(`${name}.${k}`, child));
   }
   throw new Error(`${name}: unexpected config value shape`);
 }

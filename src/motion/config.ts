@@ -173,6 +173,39 @@ export const WARMUP_HOP_REPS_COUNT = 3;
 export const WARMUP_RUN_IN_PLACE_S = 5;
 /** A move not picked up after 2 tries gets a slower demo, then the default. */
 export const WARMUP_MAX_TRIES_COUNT = 2;
+/** The still line sits "just above their wobble": wobble × this. */
+export const STILL_LINE_FROM_WOBBLE_COEFF = 1.5;
+/** Age-mode fallbacks per calibration field when a move is skipped.
+ * Units per field: hip height/reach/span/hop in BL; squat as ratio of
+ * standing hip height; wobble in BL/s; steps in per-second. */
+export const WARMUP_DEFAULT_CALIBRATION_TABLE: PerAgeMode<{
+  standingHipHeightBl: number;
+  statueWobbleBlPerS: number;
+  reachHeightBl: number;
+  armSpanBl: number;
+  squatDepthRatio: number;
+  hopHeightBl: number;
+  stepRatePerS: number;
+}> = {
+  little: {
+    standingHipHeightBl: 1.6,
+    statueWobbleBlPerS: 0.17,
+    reachHeightBl: 2.1,
+    armSpanBl: 2.2,
+    squatDepthRatio: 0.6,
+    hopHeightBl: 0.22,
+    stepRatePerS: 2,
+  },
+  big: {
+    standingHipHeightBl: 1.6,
+    statueWobbleBlPerS: 0.12,
+    reachHeightBl: 2.3,
+    armSpanBl: 2.35,
+    squatDepthRatio: 0.55,
+    hopHeightBl: 0.3,
+    stepRatePerS: 3,
+  },
+};
 /** The app suggests re-running the warm-up every ~3 months. */
 export const CALIBRATION_REDO_SUGGEST_DAYS = 90;
 
