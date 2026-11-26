@@ -28,6 +28,8 @@
     "tools",
     "test",
     "src/ui/theme.ts",
-    "src/tracking/clip-format.ts"
+    "src/tracking/clip-format.ts",
+    "src/motion",
+    "src/games/types.ts"
   ]
 }

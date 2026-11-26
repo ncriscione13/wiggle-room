@@ -13,7 +13,17 @@ import * as config from './config';
 
 type Range = config.Range;
 
-const UNIT_SUFFIXES = ['_S', '_BL', '_RATIO', '_PER_S', '_PX', '_HZ', '_DAYS', '_COUNT'] as const;
+const UNIT_SUFFIXES = [
+  '_S',
+  '_BL',
+  '_RATIO',
+  '_PER_S',
+  '_PX',
+  '_HZ',
+  '_DAYS',
+  '_COUNT',
+  '_COEFF', // dimensioned tuning coefficients (units in the doc comment)
+] as const;
 
 function isRange(v: unknown): v is Range {
   return typeof v === 'object' && v !== null && 'min' in v && 'max' in v;

@@ -4,7 +4,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { buildClip } from '../../tools/clip-synth/clips.ts';
-import { validateClipFile, type ClipFile, type ClipFrame } from '../../src/tracking/clip-format';
+import { validateClipFile, type ClipFile, type ClipFrame } from '../../src/tracking/clip-format.ts';
 
 export interface DetectorEvent {
   name: string;

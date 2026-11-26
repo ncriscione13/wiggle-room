@@ -2,6 +2,24 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-26 — M1.1 — Motion kit core
+
+- **Pieces**: OneEuroFilter/OneEuroPoint (Casiez form), `preparePose` (visibility gate →
+  never guess; teleport gate >1 BL/frame against the last TRUSTED position so a point can
+  recover after a bad frame; null when torso anchors are unusable — the player layer
+  treats that as unseen), `Hysteresis` (hi>lo enforced), `EventDebounce` (window from the
+  last FIRED event). All positions downstream are in BL relative to the hip midpoint.
+- **One Euro beta tuned to 2.0 Hz per unit/s**: the first default (0.05) left ~100 ms of
+  filter lag at 2 units/s — the "almost none when fast" design intent is test-pinned at
+  <50 ms lag; stillness smoothing (jitter std crushed >3×) is also test-pinned. `_COEFF`
+  joined the unit-suffix set for dimensioned tuning coefficients.
+- **`npm run bench` is real now**: full kit (prep + 66 point filters + hysteresis +
+  debounce) over the 10-min two-kid clip, warm-up pass then measured pass. First result:
+  avg 0.007 ms, p99 0.013 ms, max 0.44 ms — ~140× under the 1 ms budget.
+- **Node-ESM policy extended**: any src file importable by node tooling (motion kit,
+  clip-format, clip-runner) uses explicit `.ts` relative imports — the extensionless
+  chain broke `node tools/bench` one level below the entry file.
+
 ## 2026-11-26 — M0.9 fresh-eyes review — 12 findings, all addressed
 
 - **Mid-session tracking errors now tear everything down** (camera, chip interval,

@@ -92,7 +92,7 @@ Acceptance: two kids tracked live; device check shows tracking ≤ 20 ms on the 
 
 Goal: the first complete, fun, two-player game.
 
-- [ ] M1.1 Motion kit core, all pure functions with tests:
+- [x] M1.1 Motion kit core, all pure functions with tests:
   - One Euro filter
   - Visibility gating (< 0.5 ignored)
   - Outlier rejection (> 1 body length per frame)

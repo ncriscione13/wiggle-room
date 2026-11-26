@@ -50,6 +50,17 @@ export const REJOIN_WITHIN_S = 0.5;
 /** Passing bar: tracking lost under 2% of play time per kid in a lit room. */
 export const TRACKING_LOST_MAX_RATIO = 0.02;
 
+// --- Motion kit filters (M1.1; DESIGN.md "Smooth: One Euro filter") ---------
+
+/** One Euro: baseline cutoff while nearly still (heavy smoothing). */
+export const ONE_EURO_MIN_CUTOFF_HZ = 1.2;
+/** One Euro: cutoff for the internal speed estimate. */
+export const ONE_EURO_D_CUTOFF_HZ = 1.5;
+/** One Euro: extra cutoff per unit of speed (almost no smoothing when fast).
+ * Units: Hz per (unit/s). 2.0 keeps filter-induced lag under ~50 ms at
+ * 2 units/s (test-pinned) while leaving stillness heavily smoothed. */
+export const ONE_EURO_BETA_COEFF = 2.0;
+
 // --- Event detection (DESIGN.md "Motion kit" events table) ------------------
 
 /** moving/still: total body motion above/below threshold for 0.5 s. */
