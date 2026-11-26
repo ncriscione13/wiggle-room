@@ -15,6 +15,34 @@ function looksLikeClipFile(value: unknown): value is ClipFile {
   );
 }
 
+const SAFE_RELATIVE = /^[a-z0-9][a-z0-9\-./]*$/i;
+
+function assertSafeRelative(path: string): void {
+  if (!SAFE_RELATIVE.test(path) || path.includes('..') || path.includes('://')) {
+    throw new Error(`refusing suspicious asset path "${path}"`);
+  }
+}
+
+/** Same-origin JSON (e.g. the voice manifest). */
+export async function loadJson<T>(path: string): Promise<T> {
+  assertSafeRelative(path);
+  const response = await fetch(assetUrl(path));
+  if (!response.ok) {
+    throw new Error(`asset "${path}" fetch failed: HTTP ${String(response.status)}`);
+  }
+  return (await response.json()) as T;
+}
+
+/** Same-origin binary (e.g. a voice clip for Web Audio decoding). */
+export async function loadArrayBuffer(path: string): Promise<ArrayBuffer> {
+  assertSafeRelative(path);
+  const response = await fetch(assetUrl(path));
+  if (!response.ok) {
+    throw new Error(`asset "${path}" fetch failed: HTTP ${String(response.status)}`);
+  }
+  return response.arrayBuffer();
+}
+
 export async function loadClipJson(name: string): Promise<ClipFile> {
   if (!CLIP_NAME.test(name)) {
     throw new Error(`refusing suspicious clip name "${name}"`);

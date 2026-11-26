@@ -116,7 +116,7 @@ Goal: the first complete, fun, two-player game.
   - 30 s still clip: zero false "moved" events
   - Dancing clip: "moving" within 150 ms of motion starting
 - [x] M1.5 Warm-up calibration: the 7 moves in DESIGN.md, for both kids at once. Two tries, then a slower demo, then skip to the age-mode default. Results saved to the profile in localStorage. Tests check each measurement against the synthetic clips within a tolerance.
-- [ ] M1.6 Narrator v1:
+- [x] M1.6 Narrator v1:
   - `voice/lines.en.csv` (id, priority, 3–5 wordings) covering the start-up check, warm-up, Freeze Dance and wrap-up moments in DESIGN.md
   - `npm run voice` renders clips with kokoro-js and compresses them
   - Web Audio playback with priority queue, late-praise drop, never the same wording twice, help lines at most every 8 s, music ducking, left/right pan per player, captions

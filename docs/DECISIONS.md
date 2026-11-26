@@ -2,6 +2,24 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-26 — M1.6 — Narrator v1 (33 lines / 99 clips, queue rules as a pure core)
+
+- **Clips shipped as 24 kHz mono WAV (21 MB)** — no ffmpeg on this machine, and adding an
+  encoder dependency needs sign-off per CLAUDE.md. The render tool auto-compresses to ogg
+  (~3 MB) whenever ffmpeg is on PATH (`npm run voice -- --force` re-renders). Precache
+  grows to ~56 MB total; still a one-time offline install. **Ask Nick: install ffmpeg or
+  add `ffmpeg-static` devDependency?**
+- **Queue rules live in `NarratorCore`** (pure, 8 unit-tested rules): priority
+  safety>timing>instruction>praise, late-praise drop at play time (`PRAISE_LATE_DROP_S`),
+  wording rotation (never twice in a row), per-id cooldown drops (not delays) repeats,
+  pan −0.5/+0.5 per slot, color-name prefix clip + combined caption, safety preempts
+  mid-playback, unknown ids ignored. The Web Audio adapter (`narrator.ts`) is a thin
+  shell: decode-all-at-start, chained buffer sources, caption/speaking hooks (music
+  ducking wires to the AudioBus in M1.9; caption DOM lands with the shell in M1.10).
+- **`warmup.slow-demo` renders at speed 0.85** — the narrator literally slows down.
+- Generated manifest is prettier-formatted so `npm run check` stays clean on committed
+  artifacts; e2e pins that the manifest + clips are actually served.
+
 ## 2026-11-26 — M1.5 — Warm-up measurements, plan, profiles
 
 - **Each move is a batch extractor over its window's prepared frames** with an `ok`

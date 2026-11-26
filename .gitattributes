@@ -6,4 +6,5 @@
 *.wasm binary
 *.mp3 binary
 *.ogg binary
+*.wav binary
 *.woff2 binary

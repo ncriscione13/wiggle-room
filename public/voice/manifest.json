@@ -1,0 +1,698 @@
+{
+  "voice": "af_heart",
+  "lines": {
+    "startup.feet-out": {
+      "priority": 1,
+      "cooldownS": 8,
+      "wordings": [
+        {
+          "file": "startup.feet-out.0.wav",
+          "text": "Step back a little so I can see your feet!",
+          "durationS": 2.725
+        },
+        {
+          "file": "startup.feet-out.1.wav",
+          "text": "Scoot back so your feet fit in the picture!",
+          "durationS": 2.7
+        },
+        {
+          "file": "startup.feet-out.2.wav",
+          "text": "I can't see your feet — take one step back!",
+          "durationS": 3
+        }
+      ]
+    },
+    "startup.too-close": {
+      "priority": 1,
+      "cooldownS": 8,
+      "wordings": [
+        {
+          "file": "startup.too-close.0.wav",
+          "text": "Whoa, too close! Take two big steps back.",
+          "durationS": 3.025
+        },
+        {
+          "file": "startup.too-close.1.wav",
+          "text": "You're super close! Two big steps back please.",
+          "durationS": 3.275
+        },
+        {
+          "file": "startup.too-close.2.wav",
+          "text": "Back up a little so I can see all of you!",
+          "durationS": 2.675
+        }
+      ]
+    },
+    "startup.dark": {
+      "priority": 1,
+      "cooldownS": 8,
+      "wordings": [
+        {
+          "file": "startup.dark.0.wav",
+          "text": "It's a bit dark. Can a grown-up turn on a light?",
+          "durationS": 3.175
+        },
+        {
+          "file": "startup.dark.1.wav",
+          "text": "Ooh it's dark in here! More light please!",
+          "durationS": 2.7
+        },
+        {
+          "file": "startup.dark.2.wav",
+          "text": "I can barely see! Let's turn on a lamp.",
+          "durationS": 2.9
+        }
+      ]
+    },
+    "startup.backlight": {
+      "priority": 1,
+      "cooldownS": 8,
+      "wordings": [
+        {
+          "file": "startup.backlight.0.wav",
+          "text": "Something bright is behind you. Let's close the curtain.",
+          "durationS": 3.675
+        },
+        {
+          "file": "startup.backlight.1.wav",
+          "text": "The window is too bright! Can we close the curtain?",
+          "durationS": 3.325
+        },
+        {
+          "file": "startup.backlight.2.wav",
+          "text": "There's a big glow behind you — let's fix the light.",
+          "durationS": 3.325
+        }
+      ]
+    },
+    "startup.crowded": {
+      "priority": 1,
+      "cooldownS": 8,
+      "wordings": [
+        {
+          "file": "startup.crowded.0.wav",
+          "text": "One buddy per circle!",
+          "durationS": 1.95
+        },
+        {
+          "file": "startup.crowded.1.wav",
+          "text": "Oops — one kid in each circle please!",
+          "durationS": 2.7
+        },
+        {
+          "file": "startup.crowded.2.wav",
+          "text": "Find your own circle buddies!",
+          "durationS": 2.2
+        }
+      ]
+    },
+    "startup.not-seen": {
+      "priority": 1,
+      "cooldownS": 8,
+      "wordings": [
+        {
+          "file": "startup.not-seen.0.wav",
+          "text": "Step into your circle!",
+          "durationS": 1.8
+        },
+        {
+          "file": "startup.not-seen.1.wav",
+          "text": "Hi! Come stand in your circle!",
+          "durationS": 2.425
+        },
+        {
+          "file": "startup.not-seen.2.wav",
+          "text": "Where did you go? Hop back in your circle!",
+          "durationS": 2.875
+        }
+      ]
+    },
+    "startup.ready": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "startup.ready.0.wav",
+          "text": "I see you! You look great!",
+          "durationS": 2.175
+        },
+        {
+          "file": "startup.ready.1.wav",
+          "text": "There you are! Ready to wiggle?",
+          "durationS": 2.325
+        },
+        {
+          "file": "startup.ready.2.wav",
+          "text": "Perfect! I can see you head to toe!",
+          "durationS": 2.525
+        }
+      ]
+    },
+    "color.blue": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "color.blue.0.wav",
+          "text": "Blue!",
+          "durationS": 1.35
+        },
+        {
+          "file": "color.blue.1.wav",
+          "text": "Hey Blue!",
+          "durationS": 1.5
+        },
+        {
+          "file": "color.blue.2.wav",
+          "text": "Blue buddy!",
+          "durationS": 1.55
+        }
+      ]
+    },
+    "color.pink": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "color.pink.0.wav",
+          "text": "Pink!",
+          "durationS": 1.325
+        },
+        {
+          "file": "color.pink.1.wav",
+          "text": "Hey Pink!",
+          "durationS": 1.525
+        },
+        {
+          "file": "color.pink.2.wav",
+          "text": "Pink buddy!",
+          "durationS": 1.55
+        }
+      ]
+    },
+    "warmup.intro": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "warmup.intro.0.wav",
+          "text": "Warm-up time! Copy your buddy!",
+          "durationS": 2.6
+        },
+        {
+          "file": "warmup.intro.1.wav",
+          "text": "Let's warm up! Do what your buddy does!",
+          "durationS": 2.65
+        },
+        {
+          "file": "warmup.intro.2.wav",
+          "text": "Wiggle warm-up! Follow along!",
+          "durationS": 2.525
+        }
+      ]
+    },
+    "warmup.stand": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "warmup.stand.0.wav",
+          "text": "Stand tall like a tree!",
+          "durationS": 2
+        },
+        {
+          "file": "warmup.stand.1.wav",
+          "text": "Stand up big and tall!",
+          "durationS": 1.875
+        },
+        {
+          "file": "warmup.stand.2.wav",
+          "text": "Tall as a tree — stretch up!",
+          "durationS": 2.15
+        }
+      ]
+    },
+    "warmup.statue": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "warmup.statue.0.wav",
+          "text": "Freeze like a statue!",
+          "durationS": 1.875
+        },
+        {
+          "file": "warmup.statue.1.wav",
+          "text": "Hold super still like a statue!",
+          "durationS": 2.375
+        },
+        {
+          "file": "warmup.statue.2.wav",
+          "text": "Statue time — don't move a muscle!",
+          "durationS": 2.625
+        }
+      ]
+    },
+    "warmup.reach": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "warmup.reach.0.wav",
+          "text": "Reach for the sky!",
+          "durationS": 1.825
+        },
+        {
+          "file": "warmup.reach.1.wav",
+          "text": "Reach up up up!",
+          "durationS": 1.625
+        },
+        {
+          "file": "warmup.reach.2.wav",
+          "text": "Stretch your hands way up high!",
+          "durationS": 2.25
+        }
+      ]
+    },
+    "warmup.arms": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "warmup.arms.0.wav",
+          "text": "Be an airplane!",
+          "durationS": 1.675
+        },
+        {
+          "file": "warmup.arms.1.wav",
+          "text": "Arms out wide like an airplane!",
+          "durationS": 2.525
+        },
+        {
+          "file": "warmup.arms.2.wav",
+          "text": "Spread your wings like a plane!",
+          "durationS": 2.2
+        }
+      ]
+    },
+    "warmup.squat": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "warmup.squat.0.wav",
+          "text": "Squat like a frog!",
+          "durationS": 1.775
+        },
+        {
+          "file": "warmup.squat.1.wav",
+          "text": "Bend down low like a frog!",
+          "durationS": 2.3
+        },
+        {
+          "file": "warmup.squat.2.wav",
+          "text": "Froggy squat — down you go!",
+          "durationS": 2.375
+        }
+      ]
+    },
+    "warmup.hop": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "warmup.hop.0.wav",
+          "text": "Hop, hop, hop!",
+          "durationS": 1.7
+        },
+        {
+          "file": "warmup.hop.1.wav",
+          "text": "Bunny hops — three big ones!",
+          "durationS": 2.225
+        },
+        {
+          "file": "warmup.hop.2.wav",
+          "text": "Hop like a bunny!",
+          "durationS": 1.725
+        }
+      ]
+    },
+    "warmup.run": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "warmup.run.0.wav",
+          "text": "Run, run, run!",
+          "durationS": 1.9
+        },
+        {
+          "file": "warmup.run.1.wav",
+          "text": "Run on your spot — fast as you can!",
+          "durationS": 2.75
+        },
+        {
+          "file": "warmup.run.2.wav",
+          "text": "Speedy feet! Run in place!",
+          "durationS": 2.25
+        }
+      ]
+    },
+    "warmup.slow-demo": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "warmup.slow-demo.0.wav",
+          "text": "Let's try it slowly. Watch your buddy!",
+          "durationS": 3.275
+        },
+        {
+          "file": "warmup.slow-demo.1.wav",
+          "text": "One more time — nice and slow.",
+          "durationS": 2.95
+        },
+        {
+          "file": "warmup.slow-demo.2.wav",
+          "text": "Watch carefully — we'll go slow.",
+          "durationS": 2.825
+        }
+      ]
+    },
+    "warmup.done": {
+      "priority": 4,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "warmup.done.0.wav",
+          "text": "Warm-up done! You're ready!",
+          "durationS": 2.1
+        },
+        {
+          "file": "warmup.done.1.wav",
+          "text": "All warmed up! Let's play!",
+          "durationS": 2.2
+        },
+        {
+          "file": "warmup.done.2.wav",
+          "text": "Wiggles ready! Here we go!",
+          "durationS": 2.25
+        }
+      ]
+    },
+    "freeze.intro": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "freeze.intro.0.wav",
+          "text": "When the music stops, freeze!",
+          "durationS": 2.175
+        },
+        {
+          "file": "freeze.intro.1.wav",
+          "text": "Dance to the music — freeze when it stops!",
+          "durationS": 2.925
+        },
+        {
+          "file": "freeze.intro.2.wav",
+          "text": "Music means dance. Quiet means freeze!",
+          "durationS": 3.15
+        }
+      ]
+    },
+    "freeze.dance": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "freeze.dance.0.wav",
+          "text": "Dance, dance, dance!",
+          "durationS": 1.9
+        },
+        {
+          "file": "freeze.dance.1.wav",
+          "text": "Wiggle it out!",
+          "durationS": 1.525
+        },
+        {
+          "file": "freeze.dance.2.wav",
+          "text": "Shake those arms and legs!",
+          "durationS": 2.2
+        }
+      ]
+    },
+    "freeze.freeze": {
+      "priority": 2,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "freeze.freeze.0.wav",
+          "text": "Freeze!",
+          "durationS": 1.45
+        },
+        {
+          "file": "freeze.freeze.1.wav",
+          "text": "Freeze! Hold it!",
+          "durationS": 1.75
+        },
+        {
+          "file": "freeze.freeze.2.wav",
+          "text": "Statue time!",
+          "durationS": 1.65
+        }
+      ]
+    },
+    "freeze.unfreeze": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "freeze.unfreeze.0.wav",
+          "text": "Dance again!",
+          "durationS": 1.65
+        },
+        {
+          "file": "freeze.unfreeze.1.wav",
+          "text": "Keep dancing!",
+          "durationS": 1.65
+        },
+        {
+          "file": "freeze.unfreeze.2.wav",
+          "text": "Wiggle time!",
+          "durationS": 1.625
+        }
+      ]
+    },
+    "freeze.wobble": {
+      "priority": 4,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "freeze.wobble.0.wav",
+          "text": "Wobbly! Shake off the snow!",
+          "durationS": 2.3
+        },
+        {
+          "file": "freeze.wobble.1.wav",
+          "text": "Ooh a wiggle! Shake shake shake!",
+          "durationS": 2.175
+        },
+        {
+          "file": "freeze.wobble.2.wav",
+          "text": "Almost! Shake off the snowflakes!",
+          "durationS": 2.6
+        }
+      ]
+    },
+    "freeze.statue-great": {
+      "priority": 4,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "freeze.statue-great.0.wav",
+          "text": "What a great statue!",
+          "durationS": 1.725
+        },
+        {
+          "file": "freeze.statue-great.1.wav",
+          "text": "Perfect freeze!",
+          "durationS": 1.725
+        },
+        {
+          "file": "freeze.statue-great.2.wav",
+          "text": "So still! Amazing statue!",
+          "durationS": 2.5
+        }
+      ]
+    },
+    "freeze.snowstorm": {
+      "priority": 4,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "freeze.snowstorm.0.wav",
+          "text": "Team snowstorm!",
+          "durationS": 1.8
+        },
+        {
+          "file": "freeze.snowstorm.1.wav",
+          "text": "Everybody froze! Snow magic!",
+          "durationS": 2.875
+        },
+        {
+          "file": "freeze.snowstorm.2.wav",
+          "text": "All statues! Here comes the snow!",
+          "durationS": 2.8
+        }
+      ]
+    },
+    "freeze.pose-card": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "freeze.pose-card.0.wav",
+          "text": "Freeze like the picture!",
+          "durationS": 1.85
+        },
+        {
+          "file": "freeze.pose-card.1.wav",
+          "text": "Match the pose on the card!",
+          "durationS": 2.125
+        },
+        {
+          "file": "freeze.pose-card.2.wav",
+          "text": "Can you make this shape?",
+          "durationS": 1.75
+        }
+      ]
+    },
+    "freeze.slowmo": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "freeze.slowmo.0.wav",
+          "text": "Slow-motion round! Move sloooow!",
+          "durationS": 2.6
+        },
+        {
+          "file": "freeze.slowmo.1.wav",
+          "text": "Everything is slooooow now!",
+          "durationS": 2.025
+        },
+        {
+          "file": "freeze.slowmo.2.wav",
+          "text": "Sloooow dance time!",
+          "durationS": 1.825
+        }
+      ]
+    },
+    "game.first-win": {
+      "priority": 4,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "game.first-win.0.wav",
+          "text": "You did it!",
+          "durationS": 1.5
+        },
+        {
+          "file": "game.first-win.1.wav",
+          "text": "Amazing!",
+          "durationS": 1.525
+        },
+        {
+          "file": "game.first-win.2.wav",
+          "text": "Yes! Great job!",
+          "durationS": 1.975
+        }
+      ]
+    },
+    "replay.arms-up": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "replay.arms-up.0.wav",
+          "text": "Arms up to play again!",
+          "durationS": 2.025
+        },
+        {
+          "file": "replay.arms-up.1.wav",
+          "text": "Reach up high to go again!",
+          "durationS": 2.1
+        },
+        {
+          "file": "replay.arms-up.2.wav",
+          "text": "Want more? Arms up!",
+          "durationS": 1.95
+        }
+      ]
+    },
+    "wrap.two-minutes": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "wrap.two-minutes.0.wav",
+          "text": "Two more minutes!",
+          "durationS": 1.525
+        },
+        {
+          "file": "wrap.two-minutes.1.wav",
+          "text": "Almost done — two minutes left!",
+          "durationS": 2.45
+        },
+        {
+          "file": "wrap.two-minutes.2.wav",
+          "text": "Two more minutes of wiggles!",
+          "durationS": 1.925
+        }
+      ]
+    },
+    "wrap.cooldown": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "wrap.cooldown.0.wav",
+          "text": "Cool-down stretch time.",
+          "durationS": 2
+        },
+        {
+          "file": "wrap.cooldown.1.wav",
+          "text": "Time to stretch nice and slow.",
+          "durationS": 2.35
+        },
+        {
+          "file": "wrap.cooldown.2.wav",
+          "text": "Let's cool down with a big stretch.",
+          "durationS": 2.45
+        }
+      ]
+    },
+    "wrap.goodbye": {
+      "priority": 4,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "wrap.goodbye.0.wav",
+          "text": "Great moving today!",
+          "durationS": 1.85
+        },
+        {
+          "file": "wrap.goodbye.1.wav",
+          "text": "You wiggled so well today!",
+          "durationS": 2.15
+        },
+        {
+          "file": "wrap.goodbye.2.wav",
+          "text": "What a great play time!",
+          "durationS": 1.825
+        }
+      ]
+    }
+  }
+}

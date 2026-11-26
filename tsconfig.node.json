@@ -31,6 +31,8 @@
     "src/tracking/clip-format.ts",
     "src/tracking/pose-source.ts",
     "src/motion",
+    "src/voice/lines-csv.ts",
+    "src/voice/narrator-core.ts",
     "src/games/types.ts"
   ]
 }
