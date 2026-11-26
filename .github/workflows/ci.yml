@@ -81,8 +81,15 @@ jobs:
       # 2026-11-25: GitHub cut over the artifact backend; the v5 pair is
       # required (upload@v3 rejected outright, deploy@v4 can't fetch metadata
       # for artifacts uploaded by upload@v4).
+      # The artifact is named PER RUN ATTEMPT: this job both uploads and
+      # deploys, so a rerun of a flaked deploy used to add a second
+      # "github-pages" artifact to the run and deploy-pages refuses on
+      # duplicates (2026-11-26: two stuck deploys healed only by pushing).
       - uses: actions/upload-pages-artifact@v5
         with:
           path: dist
+          name: github-pages-${{ github.run_attempt }}
       - id: deployment
         uses: actions/deploy-pages@v5
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}
