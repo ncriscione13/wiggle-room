@@ -102,7 +102,7 @@ Goal: the first complete, fun, two-player game.
 
   Add `npm run bench`: the full motion kit over the 10-minute two-kid clip must average under 1 ms and stay under 2 ms at p99 per frame.
 
-- [ ] M1.2 Players and tracking states:
+- [x] M1.2 Players and tracking states:
   - Two circles mapped to screen halves; assignment by hip-center position
   - "One buddy per circle" detection
   - Per-kid Tracked → Coasting (≤ 1 s) → Paused → Tracked (after 0.3 s clear)

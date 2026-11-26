@@ -45,6 +45,9 @@ export const REACQUIRE_CLEAR_S = 0.3;
 export const LEFT_FRAME_AFTER_S = 1;
 /** Start-up check: kid seen head to ankles for this long turns the circle green. */
 export const STARTUP_CHECK_FULL_BODY_S = 1;
+/** A hip straddling mid-screen keeps its previous slot inside this band
+ * (fraction of image width around 0.5) -- no boundary flicker. */
+export const PLAYER_SIDE_DEADBAND_RATIO = 0.04;
 /** Passing bar: a kid stepping back in is playing again within this time. */
 export const REJOIN_WITHIN_S = 0.5;
 /** Passing bar: tracking lost under 2% of play time per kid in a lit room. */

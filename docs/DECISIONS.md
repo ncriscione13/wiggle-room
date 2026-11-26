@@ -2,6 +2,24 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-26 — M1.2 — Player binding + tracking states
+
+- **Binding is hip-center-to-half** with a 4%-of-width deadband at mid-screen (a
+  straddler keeps its previous slot — no boundary flicker; config constant). Within a
+  half, the candidate nearest the slot's last hip is the player; extras crowd the half
+  ("One buddy per circle!") while the other kid plays on. Detection order is irrelevant
+  (test-pinned).
+- **State machine per kid**: Tracked → Coasting immediately when unseen (buddy keeps the
+  last pose) → Paused after 1 s → Tracked after 0.3 s of CONTINUOUS clear tracking (any
+  blip restarts the window; test-pinned).
+- **Clip gates aligned to DESIGN's own words** after two near-miss test encodings of
+  mine: "tracking lost < 2% of play time" means PAUSED (brief coasting over dropouts is
+  designed, not lost), and "within 0.5 s of being FULLY in view" clocks from
+  hips-confidently-visible, not from the first half-visible edge pixel. Results on the
+  two-kid clip: zero swaps across 10 minutes of crossing arms, <2% paused per kid.
+- **Test placement policy**: clip-consuming tests (they need the node-side clip harness)
+  live under `test/`; colocated `src/**` tests stay import-pure for the DOM app project.
+
 ## 2026-11-26 — M1.1 — Motion kit core
 
 - **Pieces**: OneEuroFilter/OneEuroPoint (Casiez form), `preparePose` (visibility gate →
