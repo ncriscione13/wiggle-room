@@ -2,6 +2,20 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-26 — M1.8 — Timing check core (clap matcher + clap detector + store)
+
+- **Greedy best-first beat↔clap matching** (smallest |delay| pairs win, each side used
+  once) with a trust gate: ≥6 matches AND IQR ≤ 0.12 s, else offset 0. Off-rhythm claps
+  are rejected by the SPREAD, not the count — a clap 0.9 s late sits 0.3 s before the
+  next beat and matches it (test originally assumed otherwise; fixed to the mechanism).
+  A kid anticipating the beat (small negative offset) is valid and kept.
+- **Clap detector:** armed by hands > 0.6 BL apart; fires at contact (gap ≤ 0.3 BL)
+  only when closing ≥ 1.5 BL/s — praying hands and slow drifts never clap; standard
+  event debounce. Detector tests use inline synthetic frames (same pure-function shape
+  as clip tests; no new clip file needed for a check-only detector).
+- **Untrusted results are never stored.** `getTimingOffsetS()` serves 0 until a trusted
+  check ran; games shift windows by it (M1.9) and the 15 s screen mounts in M1.10.
+
 ## 2026-11-26 — M1.7 — Buddy avatar (sampler + reactions + geometry + painter)
 
 - **EWMA instead of One Euro for the buddy's draw pose.** One Euro's group delay at

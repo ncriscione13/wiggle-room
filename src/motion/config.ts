@@ -136,6 +136,25 @@ export const BUDDY_WAVE_S = 1.0;
 /** Statue sparkle ramps in over this long after the freeze latches. */
 export const BUDDY_STATUE_RAMP_S = 0.5;
 
+// --- Timing check (M1.8; DESIGN "clap with the drum") ------------------------
+
+/** Length of the clap-along test. */
+export const TIMING_CHECK_DURATION_S = 15;
+/** Drum beat spacing (slow, toddler-clappable). */
+export const TIMING_BEAT_PERIOD_S = 1.2;
+/** A clap counts for a beat when within this window of it. */
+export const TIMING_MATCH_WINDOW_S = 0.5;
+/** Need at least this many matched claps to trust the measurement. */
+export const TIMING_MIN_VALID_COUNT = 6;
+/** Matched delays must agree this well (IQR) to trust the median. */
+export const TIMING_MAX_SPREAD_S = 0.12;
+/** Wrists this close (in BL) count as hands meeting. */
+export const CLAP_CONTACT_GAP_BL = 0.3;
+/** Hands must approach at least this fast for a clap (vs. slow drift). */
+export const CLAP_MIN_CLOSE_SPEED_BL_PER_S = 1.5;
+/** Hands must separate past this (in BL) before another clap can fire. */
+export const CLAP_REARM_GAP_BL = 0.6;
+
 // --- Lag budget (DESIGN.md "Lag budget" table) -------------------------------
 
 export const LAG_BUDGET_CAMERA_S = 0.045;
