@@ -112,7 +112,7 @@ Goal: the first complete, fun, two-player game.
   - Walk-out clip: back to Tracked within 0.5 s of being fully in view
 
 - [ ] M1.3 Start-up check: a circle turns green after the kid is seen head to ankles for 1 s. Detects feet out of frame, too close, dark frame (mean brightness), backlight (bright background vs body box) and two kids in one circle, each mapped to its voice line. Tests with the low-visibility clip.
-- [ ] M1.4 Moving/still detector: motion energy in body lengths per second, per-kid still line from calibration, hysteresis, 0.5 s hold. Tests:
+- [x] M1.4 Moving/still detector: motion energy in body lengths per second, per-kid still line from calibration, hysteresis, 0.5 s hold. Tests:
   - 30 s still clip: zero false "moved" events
   - Dancing clip: "moving" within 150 ms of motion starting
 - [ ] M1.5 Warm-up calibration: the 7 moves in DESIGN.md, for both kids at once. Two tries, then a slower demo, then skip to the age-mode default. Results saved to the profile in localStorage. Tests check each measurement against the synthetic clips within a tolerance.

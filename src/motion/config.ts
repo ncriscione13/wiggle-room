@@ -66,8 +66,19 @@ export const ONE_EURO_BETA_COEFF = 2.0;
 
 // --- Event detection (DESIGN.md "Motion kit" events table) ------------------
 
-/** moving/still: total body motion above/below threshold for 0.5 s. */
+/** moving/still: becoming STILL requires energy below the line this long
+ * (freezes must be confirmed); see MOVING_CONFIRM_S for the fast direction. */
 export const STILL_MOVING_HOLD_S = 0.5;
+/** Becoming MOVING is fast (PLAN M1.4: "within 150 ms of motion starting"):
+ * energy above the line for this long flips the state. */
+export const MOVING_CONFIRM_S = 0.1;
+/** Default still line until the warm-up measures the kid's own wobble
+ * (DESIGN: "set just above their wobble"). Mean smoothed core-point speed. */
+export const STILL_LINE_DEFAULT_BL_PER_S = 0.25;
+/** Hysteresis around the still line: moving enters above line × HI, still
+ * re-enters below line × LO. */
+export const MOVING_ENTER_HI_COEFF = 1.5;
+export const STILL_ENTER_LO_COEFF = 0.7;
 /** squat: hips drop below 75% of standing hip height. */
 export const SQUAT_HIP_DROP_RATIO = 0.75;
 /** jump: cancelled if hips don't rise ~15% of body length after takeoff. */

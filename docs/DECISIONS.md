@@ -2,6 +2,20 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-26 — M1.4 — Moving/still detector (built before M1.3; it needs no luma)
+
+- **Asymmetric timing reconciles PLAN's two requirements**: becoming MOVING confirms in
+  0.1 s (test: onset within 150 ms of the dance block starting — a kid caught moving
+  during a freeze registers immediately), becoming STILL requires the full 0.5 s hold
+  (a freeze must be confirmed). Both directions test-pinned with synthetic drive.
+- **Energy = mean smoothed-core-point speed in BL/s** (nose, wrists, knees, ankles —
+  face detail would only add noise), on One-Euro-smoothed positions so sensor jitter
+  can't fake movement. Hysteresis sits at line×1.5 / line×0.7 around the kid's still
+  line (default 0.25 BL/s until the warm-up measures their wobble).
+- **Clip gates**: still-30s → zero false "moving"; jumps-x5 → exactly 5 movement
+  onsets (still again between hops, hold respected); two-kids quiet block → stays still
+  until the dancing starts, then flips within 150 ms.
+
 ## 2026-11-26 — M1.2 — Player binding + tracking states
 
 - **Binding is hip-center-to-half** with a 4%-of-width deadband at mid-screen (a
