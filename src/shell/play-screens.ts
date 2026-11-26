@@ -7,7 +7,15 @@ import type { PlayerInfo, RoundResult, Slot } from '../games/types';
 import type { StartupProblem } from '../motion/startup-check';
 import type { WarmupMoveId } from '../motion/warmup-flow';
 import { paintCheckStage, type CheckSlotView, type RenderCtx2D } from '../ui/check-stage';
+import { AdaptiveFloorCircle } from '../ui/floor-circles';
 import { colors, cssRgb, px, typography } from '../ui/theme';
+
+/** The camera frame shape, so the stage canvas can match its aspect (phone
+ * play round 1: a fixed 16:9 canvas distorted portrait/4:3 pictures). */
+export interface CameraShape {
+  widthPx: number;
+  heightPx: number;
+}
 
 const BASE_STYLE = `
   position: absolute; inset: 0; display: grid; place-content: center;
@@ -62,7 +70,10 @@ export function pickPlayers(root: HTMLElement): Promise<1 | 2> {
       });
       row.append(button);
     }
-    el.append(row, note('Grown-ups: hold P any time for settings.'));
+    el.append(
+      row,
+      note('Grown-ups: hold P (or press and hold the top-right corner) for settings.'),
+    );
     root.append(el);
   });
 }
@@ -123,27 +134,42 @@ interface LiveStageView {
   destroy(): void;
 }
 
-const STAGE_CANVAS_W = 1280;
 const STAGE_CANVAS_H = 720;
+const STAGE_CANVAS_MIN_W = 320;
+const STAGE_CANVAS_MAX_W = 1600;
 
-function liveStageView(players: PlayerInfo[], testid: string): LiveStageView {
+function liveStageView(players: PlayerInfo[], testid: string, camera?: CameraShape): LiveStageView {
   const frame = document.createElement('div');
   frame.style.cssText =
     'position: relative; flex: 1 1 auto; min-height: 0; width: 100%; display: grid; place-items: center;';
   const canvas = document.createElement('canvas');
-  canvas.width = STAGE_CANVAS_W;
+  // Match the CAMERA's aspect so buddies keep their true proportions on any
+  // framing (desktop 4:3, phone landscape, even portrait).
+  const aspect = camera !== undefined ? camera.widthPx / camera.heightPx : 16 / 9;
   canvas.height = STAGE_CANVAS_H;
+  canvas.width = Math.round(
+    Math.min(STAGE_CANVAS_MAX_W, Math.max(STAGE_CANVAS_MIN_W, STAGE_CANVAS_H * aspect)),
+  );
   canvas.dataset['testid'] = testid;
   // Replaced element: max-width + max-height scale it to fit the frame while
-  // keeping the 16:9 bitmap ratio (no distortion, bars match the night bg).
+  // keeping the bitmap ratio (no distortion, bars match the night bg).
   canvas.style.cssText = 'display: block; max-width: 100%; max-height: 100%;';
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position: absolute; inset: 0; pointer-events: none;';
   frame.append(canvas, overlay);
   const ctx = canvas.getContext('2d');
   const views = new Map<Slot, CheckSlotView>();
+  const circles = new Map<Slot, AdaptiveFloorCircle>();
   for (const player of players) {
-    views.set(player.slot, { color: player.color, pose: null, progress01: 0, ready: false });
+    const adaptive = new AdaptiveFloorCircle(player.slot);
+    circles.set(player.slot, adaptive);
+    views.set(player.slot, {
+      color: player.color,
+      pose: null,
+      circle: adaptive.update(null, 0),
+      progress01: 0,
+      ready: false,
+    });
   }
   let lastTS = 0;
   let raf: number | null = null;
@@ -151,7 +177,7 @@ function liveStageView(players: PlayerInfo[], testid: string): LiveStageView {
     raf = null;
     if (ctx !== null) {
       const surface: RenderCtx2D = ctx;
-      paintCheckStage(surface, STAGE_CANVAS_W, STAGE_CANVAS_H, views, lastTS);
+      paintCheckStage(surface, canvas.width, canvas.height, views, lastTS);
     }
   };
   const schedule = (): void => {
@@ -161,6 +187,10 @@ function liveStageView(players: PlayerInfo[], testid: string): LiveStageView {
     const view = views.get(slot);
     if (view === undefined) return;
     view.pose = pose;
+    // The circle glides under the detected kid (phone framings vary too much
+    // for a fixed spot); unseen slots drift back to the default.
+    const adaptive = circles.get(slot);
+    if (adaptive !== undefined) view.circle = adaptive.update(pose, tS);
     lastTS = tS;
     schedule();
   };
@@ -179,13 +209,26 @@ function liveStageView(players: PlayerInfo[], testid: string): LiveStageView {
 /** Start-up check: the mirrored stage shows each kid's circle with their
  * buddy in it; the circle fills green as the full-body second accumulates
  * (DESIGN start-up check: "each circle shows the kid's buddy"). */
-export function checkScreen(root: HTMLElement, players: PlayerInfo[]): CheckScreen {
+export function checkScreen(
+  root: HTMLElement,
+  players: PlayerInfo[],
+  camera?: CameraShape,
+): CheckScreen {
   const el = fullScreen('check-screen');
   const title = heading('Can I see you head to toe?');
   title.style.padding = '12px 0 8px';
   el.append(title);
-  const stage = liveStageView(players, 'check-stage');
+  const stage = liveStageView(players, 'check-stage', camera);
   el.append(stage.frame);
+  if (camera !== undefined && camera.heightPx > camera.widthPx) {
+    // Portrait camera: side-by-side circles barely fit. Ask once, kindly.
+    const rotate = overlayPill(note('Turn the phone sideways!'));
+    rotate.dataset['testid'] = 'rotate-hint';
+    rotate.style.cssText +=
+      'position: absolute; top: 14px; left: 50%; transform: translateX(-50%); width: max-content;';
+    rotate.style.color = cssRgb(colors.butter);
+    stage.overlay.append(rotate);
+  }
   // Labels float over the bottom of the picture, one per half.
   const row = document.createElement('div');
   // bottom 64px: clear of the caption strip that appears while lines play.
@@ -253,7 +296,11 @@ const MOVE_LABELS: Record<WarmupMoveId, string> = {
   run: 'Run run run!',
 };
 
-export function warmupScreen(root: HTMLElement, players: PlayerInfo[]): WarmupScreen {
+export function warmupScreen(
+  root: HTMLElement,
+  players: PlayerInfo[],
+  camera?: CameraShape,
+): WarmupScreen {
   const el = fullScreen('warmup-screen');
   const title = heading('Wiggle warm-up!');
   title.style.padding = '12px 0 8px';
@@ -261,7 +308,7 @@ export function warmupScreen(root: HTMLElement, players: PlayerInfo[]): WarmupSc
   // The kid watches their own buddy do the moves with them, inside their
   // circle (playtest fix: the moves were text-only before). The move prompt
   // floats big over the top of the picture; the reminder sits at the bottom.
-  const stage = liveStageView(players, 'warmup-stage');
+  const stage = liveStageView(players, 'warmup-stage', camera);
   el.append(stage.frame);
   const move = overlayPill(document.createElement('p'));
   move.dataset['testid'] = 'warmup-move';
@@ -345,7 +392,21 @@ export function goodbyeScreen(root: HTMLElement): void {
   const el = screen('goodbye');
   el.append(
     heading('Great moving today!'),
-    note('Time for a break. A grown-up can hold P to unlock.'),
+    note('Time for a break. A grown-up can hold P — or press and hold the top-right corner.'),
   );
   root.append(el);
+}
+
+/** The invisible press-and-hold corner that twins the P key on phones. It
+ * sits above every screen; the flow fills it in as the hold progresses so a
+ * deliberate grown-up gets feedback while a flailing kid sees nothing. */
+export function cornerGateZone(root: HTMLElement): HTMLDivElement {
+  const zone = document.createElement('div');
+  zone.dataset['testid'] = 'corner-gate';
+  zone.style.cssText = `
+    position: absolute; top: 0; right: 0; width: 84px; height: 84px;
+    z-index: 70; touch-action: none; border-bottom-left-radius: 100%;
+  `;
+  root.append(zone);
+  return zone;
 }

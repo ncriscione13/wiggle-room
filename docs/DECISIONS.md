@@ -2,6 +2,41 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-26 — Phone play round 1 — wake lock, touch gate, adaptive circles, camera aspect
+
+Nick validated the phone path (Safari on iPhone; AirPlay to the TV is the end goal) and
+asked for it: tracking worked, but the phone framing broke assumptions a desktop webcam
+never tested. New scope approved by Nick ("Go ahead and build…").
+
+- **Screen wake lock** (`src/shell/wake-lock.ts`): rounds are hands-off, so the phone
+  dimmed and locked mid-game, killing the camera and any AirPlay mirror.
+  `keepAwake(navigator, document)` requests a screen lock at play start, re-acquires on
+  every return to visibility (the OS drops it on hide), and is strictly best-effort —
+  no API or a denied request never surfaces to a kid. Runs on desktop too (screensavers
+  are the same bug). Released at the goodbye screen.
+- **Touch parent gate**: phones have no P key, so settings (and the clap check, which
+  makes AirPlay timing fair) were unreachable. The 3 s hold timer is now shared
+  (`HoldTimer`) between the P key and a new `HoldPointerGate` on an invisible 84 px
+  top-right corner zone; pointerup/cancel/leave all reset, so a kid swiping across
+  never opens it, and the corner only fills in visibly while a deliberate hold is in
+  progress. Both doors stay active through the goodbye screen.
+- **Adaptive floor circles** (`AdaptiveFloorCircle`): with the phone's framing, kids had
+  to stand so far back that the FIXED circle spots landed nowhere near their feet —
+  Nick: "adjust where the circles are based on the person being identified." Binding
+  truth is unchanged (halves of the image); the DRAWN circle now glides under the
+  detected kid — x at their hips (clamped ≥ 0.12 inside their half so the target never
+  invites standing on the mid-line), y just below their feet, radius from their own
+  torso length — on a slow 1.2 s EWMA so hops/squats don't bounce it. Unseen slots
+  drift back to the default spot. All knobs in config (`FLOOR_CIRCLE_*`).
+- **The stage canvas now matches the CAMERA's aspect** instead of a fixed 16:9 bitmap,
+  so buddies keep true proportions on 4:3 desktops and phones alike; portrait gets a
+  gentle "Turn the phone sideways!" pill on the check screen (side-by-side circles
+  barely fit a portrait frame; we prompt rather than engineer portrait support).
+- Known limits, deliberately deferred: no live re-layout if the phone is rotated
+  mid-session (re-open the page), `facingMode` camera selection (front camera is fine
+  propped under the TV), and the game scene itself still assumes the stage aspect —
+  revisit when the TV numbers arrive.
+
 ## 2026-11-26 — M1 playtest round 2 — full-screen stage + the voice must match the screen
 
 Nick's second desk run with the kids: the calibration view sat in a window instead of

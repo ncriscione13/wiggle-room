@@ -21,20 +21,22 @@ import {
   type StartupProblem,
 } from '../motion/startup-check';
 import { WarmupFlow } from '../motion/warmup-flow';
-import { playerColors, cssRgb, colors, px, theme, typography } from '../ui/theme';
+import { playerColors, cssRgb, cssRgba, colors, px, theme, typography } from '../ui/theme';
 import { createNarrator, type NarratorHandle } from '../voice/narrator';
 import { CameraOpenError, createLiveMotion, type LiveMotion } from './live-motion';
 import { renderCameraErrorScreen } from './camera-error-screen';
 import { loadGameScene } from './launcher';
-import { HoldKeyGate } from './parent-gate';
+import { HoldKeyGate, HoldPointerGate } from './parent-gate';
 import {
   checkScreen,
   cooldownScreen,
+  cornerGateZone,
   goodbyeScreen,
   pickPlayers,
   resultsScreen,
   warmupScreen,
 } from './play-screens';
+import { keepAwake } from './wake-lock';
 import { defaultCalibration, loadProfiles, saveProfiles, type Profile } from './profiles';
 import { SessionTimer } from './session';
 import { loadSettings, saveSettings, type ParentSettings } from './settings';
@@ -198,7 +200,11 @@ export async function bootPlay(root: HTMLElement): Promise<void> {
     voice.setVolume(s.voiceVol01);
   };
   applySettings(settings);
-  const gate = new HoldKeyGate(window, nowS, () => {
+  // Phone play round 1: rounds are hands-off, so keep the screen awake (the
+  // phone locking kills the camera and any AirPlay mirror). Best effort.
+  const wake = keepAwake(navigator, document);
+
+  const openSettings = (): void => {
     // The clap check needs the live camera; desk mode has no real latency.
     const lm = liveMotion;
     const timingCheck =
@@ -207,10 +213,25 @@ export async function bootPlay(root: HTMLElement): Promise<void> {
             runTimingCheck(lm, audio, onStatus)
         : null;
     settingsOverlay(root, settings, applySettings, timingCheck);
-  });
+  };
+  // Two doors, one gate: hold P (desktop) or press-and-hold the top-right
+  // corner (phones have no P key).
+  const gate = new HoldKeyGate(window, nowS, openSettings);
+  const zone = cornerGateZone(root);
+  const pointerGate = new HoldPointerGate(zone, nowS, openSettings);
   const gateTimer = window.setInterval(() => {
     gate.tick();
+    pointerGate.tick();
+    // Quiet feedback: the corner fills in only while a hold is in progress.
+    zone.style.background = cssRgba(colors.surfaceRaised, 0.55 * pointerGate.progress01());
   }, 100);
+  const closeShell = (): void => {
+    window.clearInterval(gateTimer);
+    gate.close();
+    pointerGate.close();
+    zone.remove();
+    wake.stop();
+  };
 
   const profiles = ensureProfiles(count, live);
 
@@ -223,7 +244,7 @@ export async function bootPlay(root: HTMLElement): Promise<void> {
     } catch (error) {
       const kind = error instanceof CameraOpenError ? error.kind : 'model';
       renderCameraErrorScreen(root, kind);
-      window.clearInterval(gateTimer);
+      closeShell();
       return;
     }
     motion = liveMotion.kit;
@@ -248,7 +269,10 @@ export async function bootPlay(root: HTMLElement): Promise<void> {
     const screenPlayers = watchSlots.map((slot) =>
       toPlayerInfo(profiles[Math.min(slot, profiles.length - 1)] ?? profiles[0] ?? fallback, slot),
     );
-    const screen = checkScreen(root, screenPlayers);
+    const screen = checkScreen(root, screenPlayers, {
+      widthPx: lm.camera.widthPx,
+      heightPx: lm.camera.heightPx,
+    });
     const checkers = new Map<Slot, StartupChecker>(
       watchSlots.map((slot) => [slot, new StartupChecker()]),
     );
@@ -332,6 +356,7 @@ export async function bootPlay(root: HTMLElement): Promise<void> {
     const screen = warmupScreen(
       root,
       slots.map((slot) => toPlayerInfo(profileForSlot(slot), slot)),
+      { widthPx: lm.camera.widthPx, heightPx: lm.camera.heightPx },
     );
     const calibrations = await new Promise<(Calibration | null)[]>((resolve) => {
       const offTap = lm.onFrame((tS, frame) => {
@@ -417,7 +442,9 @@ export async function bootPlay(root: HTMLElement): Promise<void> {
   goodbyeScreen(root);
   // Parent gate (already running) unlocks via settings; a fresh session is a
   // reload away -- the goodbye screen stays until then (DESIGN: no new game
-  // until a parent unlocks).
+  // until a parent unlocks). The wake lock stays with the gate: the goodbye
+  // screen may sleep, but the gate itself keeps working on a tap.
+  wake.stop();
   liveMotion?.stop();
 }
 

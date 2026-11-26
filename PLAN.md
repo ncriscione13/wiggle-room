@@ -400,3 +400,21 @@ DECISIONS "M1 playtest round 2"):
   it plays in. The spare circle in a solo pick stops saying "Step into your
   circle!" once the kid picked the other one, and the warm-up's closing line
   is no longer silently dropped.
+
+### Phone play round 1 (2026-11-26)
+
+Nick validated phone play (Safari on iPhone; AirPlay-to-TV is the goal) and
+asked for the enablers (see DECISIONS "Phone play round 1"):
+
+- Screen wake lock while playing (phones locked mid-round and killed the
+  camera); best-effort, runs on desktop too.
+- Touch parent gate: press-and-hold the TOP-RIGHT CORNER for 3 s = hold-P.
+  This is also how you reach the clap check on the phone — run it over
+  AirPlay so the measured delay makes the freeze timing fair.
+- The drawn circles now glide under the detected kid (phone framings vary
+  too much for fixed spots) and the stage view matches the camera's real
+  aspect; a portrait camera gets a "Turn the phone sideways!" hint.
+
+**Phone test additions:** on the phone, hold the top-right corner 3 s → run
+the clap check over AirPlay and send the ms; note whether the circles settle
+under the kids sensibly at your phone's distance.

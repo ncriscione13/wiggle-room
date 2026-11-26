@@ -67,6 +67,16 @@ test('live flow: empty room stops at the start-up check with a friendly ask', as
   await expect(page.getByTestId('check-problem-0')).toContainText('Step into your circle', {
     timeout: 30_000,
   });
+
+  // Phone play round 1: press-and-hold the top-right corner is the touch
+  // twin of hold-P (phones have no P key); it opens the parent settings.
+  await page.getByTestId('corner-gate').hover();
+  await page.mouse.down();
+  await page.waitForTimeout(3300);
+  await page.mouse.up();
+  await expect(page.getByTestId('settings')).toBeVisible();
+  await page.getByTestId('settings-close').click();
+  await expect(page.getByTestId('settings')).toBeHidden();
 });
 
 test('start screen offers the play button', async ({ page }) => {

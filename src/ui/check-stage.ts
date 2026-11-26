@@ -10,7 +10,7 @@ import type { BuddyDrawPose } from '../motion/buddy-pose';
 import type { Slot } from '../games/types';
 import { buddyShapes } from './buddy-geometry';
 import { paintBuddy, type BuddyCanvas, type BuddyViewport } from './buddy';
-import { floorCircleScreen } from './floor-circles';
+import { circleToViewport, type FloorCircle } from './floor-circles';
 import { colors, cssRgba, cssRgbaFromNumber, type ColorToken } from './theme';
 
 /** The minimal 2D-context surface the painter needs (unit-testable). */
@@ -62,6 +62,9 @@ export interface CheckSlotView {
   color: ColorToken;
   /** Live buddy pose (image space) or null while the kid is unseen. */
   pose: BuddyDrawPose | null;
+  /** Where this slot's circle currently sits, in image space (adaptive on
+   * phones: it glides under the detected kid). */
+  circle: FloorCircle;
   /** 0..1 head-to-ankles confirmation progress; the circle fills with it. */
   progress01: number;
   /** Seen head to ankles long enough: the circle turns solid green. */
@@ -79,8 +82,8 @@ export function paintCheckStage(
   ctx.clearRect(0, 0, widthPx, heightPx);
   const vp: BuddyViewport = { x: 0, y: 0, width: widthPx, height: heightPx, mirrored: true };
 
-  for (const [slot, view] of views) {
-    const c = floorCircleScreen(slot, vp);
+  for (const [, view] of views) {
+    const c = circleToViewport(view.circle, vp);
     const token = view.ready ? 'meadow' : view.color;
     ctx.beginPath();
     ctx.ellipse(c.cx, c.cy, c.rx, c.ry, 0, 0, TWO_PI);

@@ -150,6 +150,22 @@ export const FLOOR_CIRCLE_CENTER_Y_IMAGE_RATIO = 0.82;
 export const FLOOR_CIRCLE_RX_IMAGE_RATIO = 0.11;
 /** Vertical/horizontal radius ratio: a circle on the floor seen at an angle. */
 export const FLOOR_CIRCLE_RY_PER_RX_RATIO = 0.32;
+/** Adaptive circles (phone play round 1): a phone's framing varies too much
+ * for fixed spots, so once a kid is seen their circle glides under THEM --
+ * sized from their torso, settled at their feet, clamped inside their half. */
+export const FLOOR_CIRCLE_RX_PER_BL = 0.55;
+/** Circle center sits just below the lower foot. */
+export const FLOOR_CIRCLE_FOOT_DROP_IMAGE_RATIO = 0.03;
+/** Keep circle centers this far from the mid-line AND the frame edges, so
+ * the target never invites standing on the binding boundary. */
+export const FLOOR_CIRCLE_HALF_INSET_RATIO = 0.12;
+/** EWMA time constant: slow enough that hops and squats don't bounce it. */
+export const FLOOR_CIRCLE_ADAPT_TAU_S = 1.2;
+/** Sanity clamps for the adaptive center and radius. */
+export const FLOOR_CIRCLE_Y_MIN_IMAGE_RATIO = 0.3;
+export const FLOOR_CIRCLE_Y_MAX_IMAGE_RATIO = 0.95;
+export const FLOOR_CIRCLE_RX_MIN_IMAGE_RATIO = 0.05;
+export const FLOOR_CIRCLE_RX_MAX_IMAGE_RATIO = 0.2;
 
 // --- Timing check (M1.8; DESIGN "clap with the drum") ------------------------
 

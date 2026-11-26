@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { BuddyDrawPose } from '../motion/buddy-pose';
+import { floorCircleImage } from './floor-circles';
 import { colors, cssRgba, phaserColor } from './theme';
 import {
   buddyCanvasFor,
@@ -62,6 +63,7 @@ const pose = (cx = 0.25): BuddyDrawPose => ({
 const view = (over: Partial<CheckSlotView> = {}): CheckSlotView => ({
   color: 'playerBlue',
   pose: null,
+  circle: floorCircleImage(0),
   progress01: 0,
   ready: false,
   ...over,
@@ -90,7 +92,7 @@ describe('paintCheckStage', () => {
       720,
       new Map([
         [0, view()],
-        [1, view({ color: 'playerPink' })],
+        [1, view({ color: 'playerPink', circle: floorCircleImage(1) })],
       ]),
       0,
     );
