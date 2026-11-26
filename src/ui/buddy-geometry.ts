@@ -88,7 +88,9 @@ export function buddyShapes(
   const head = { x: pose.head.x + wobbleX, y: pose.head.y };
   const chest = lerp(pose.hipMid, head, 0.55);
   const belly = lerp(pose.hipMid, head, 0.15);
-  const limbW = 0.2 * bl;
+  // Slimmer than the first pass (playtest round 4: "marshmallow men") --
+  // still soft blobs per DESIGN, but with visible arms, not pool noodles.
+  const limbW = 0.14 * bl;
 
   const shapes: BuddyShape[] = [
     // Head first: tests and the painter treat shapes[0] as the head.
@@ -147,20 +149,45 @@ export function buddyShapes(
       token: color,
       alpha,
     },
-    // Face: two eyes (closed-happy during giggle/cheer is painter detail).
+    // Face: two eyes and a three-dot smile (the painter only draws circles;
+    // a FACE is what turns a marshmallow into a buddy -- playtest round 4).
     {
       kind: 'circle',
       x: head.x - 0.13 * bl,
-      y: head.y - 0.04 * bl,
-      r: 0.05 * bl,
+      y: head.y - 0.06 * bl,
+      r: 0.055 * bl,
       token: 'surfaceNight',
       alpha,
     },
     {
       kind: 'circle',
       x: head.x + 0.13 * bl,
-      y: head.y - 0.04 * bl,
-      r: 0.05 * bl,
+      y: head.y - 0.06 * bl,
+      r: 0.055 * bl,
+      token: 'surfaceNight',
+      alpha,
+    },
+    {
+      kind: 'circle',
+      x: head.x - 0.09 * bl,
+      y: head.y + 0.12 * bl,
+      r: 0.032 * bl,
+      token: 'surfaceNight',
+      alpha,
+    },
+    {
+      kind: 'circle',
+      x: head.x,
+      y: head.y + 0.16 * bl,
+      r: 0.032 * bl,
+      token: 'surfaceNight',
+      alpha,
+    },
+    {
+      kind: 'circle',
+      x: head.x + 0.09 * bl,
+      y: head.y + 0.12 * bl,
+      r: 0.032 * bl,
       token: 'surfaceNight',
       alpha,
     },

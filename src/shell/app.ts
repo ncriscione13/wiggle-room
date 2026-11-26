@@ -324,6 +324,22 @@ export async function bootApp(root: HTMLElement): Promise<void> {
     return;
   }
 
+  // Keep the start screen fresh (playtest round 4: "I don't see the
+  // changes"): the PWA updates in the background, so an already-open page
+  // keeps running old code until a reload. On the START SCREEN PATH ONLY
+  // (never mid-game), reload once when a new service worker takes control,
+  // and nudge the browser to check for one now. First-ever installs have no
+  // previous controller and are skipped (nothing stale to replace).
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller !== null) {
+    let reloadedForUpdate = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (reloadedForUpdate) return;
+      reloadedForUpdate = true;
+      window.location.reload();
+    });
+    void navigator.serviceWorker.getRegistration().then((reg) => reg?.update());
+  }
+
   if (isRecorderEnabled(window.location.search, import.meta.env.DEV)) {
     mountDevTools(root, {
       getSource: () => session?.source ?? null,

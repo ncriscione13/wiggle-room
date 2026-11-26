@@ -14,6 +14,7 @@ import {
 import { paintBuddy, type BuddyViewport } from '../../ui/buddy';
 import { buddyShapes } from '../../ui/buddy-geometry';
 import { BuddyReactions } from '../../ui/buddy-state';
+import { floorCircleScreen } from '../../ui/floor-circles';
 import { colors, phaserColor, typography } from '../../ui/theme';
 import type { GameContext, Slot } from '../types';
 import { FreezeCore, type FreezeDirective, type PoseCardId } from './core';
@@ -123,12 +124,14 @@ class FreezeScene extends Phaser.Scene {
   create(): void {
     this.cameras.main.setBackgroundColor(phaserColor(colors.surfaceNight));
 
-    // Floor circles, one per half (the kid's home).
+    // Floor circles: one per ACTIVE player only (solo = one circle), at the
+    // same shared spot every screen uses (playtest round 4 fix -- the scene
+    // used to draw both halves' circles with its own geometry).
     const floor = this.add.graphics();
-    for (const slot of SLOTS) {
-      const token = this.ctx.players[slot]?.color ?? 'playerBlue';
-      floor.lineStyle(6, phaserColor(colors[token]), 0.5);
-      floor.strokeEllipse(slotScreenX(slot) + STAGE_W * 0.25, STAGE_H * 0.86, 360, 90);
+    for (const player of this.ctx.players) {
+      const c = floorCircleScreen(player.slot, FULL_VIEWPORT);
+      floor.lineStyle(6, phaserColor(colors[player.color]), 0.5);
+      floor.strokeEllipse(c.cx, c.cy, c.rx * 2, c.ry * 2);
     }
 
     this.buddyGfx = SLOTS.map(() => this.add.graphics());

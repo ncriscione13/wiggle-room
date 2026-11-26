@@ -2,6 +2,25 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-26 — Playtest round 4 — stale-cache self-heal, solo circle IN-GAME, buddy faces
+
+Nick: "I don't see the changes… marshmallow men… one person still shows 2 circles on
+the floor."
+
+- **"I don't see the changes" = the PWA update gap.** autoUpdate swaps the service
+  worker in the background, but an open page runs old code until a reload — with
+  ~25 MB of precache, a quick reload keeps the old build. Now the START SCREEN (and
+  only the start screen — never mid-game) reloads itself once when a new service
+  worker takes control, and nudges an update check on load. First-ever installs are
+  skipped (no previous controller — nothing stale).
+- **The solo-circle fix had only reached the CHECK screen.** The Freeze scene drew
+  BOTH halves' floor circles unconditionally, with its own hardcoded geometry. It now
+  draws circles only for ACTIVE players, from the shared `floorCircleScreen` spot —
+  the third place drawing circles, now the third place using the one module.
+- **Buddy de-marshmallowing (interim; the real art pass is M4):** limbs slimmed
+  0.2 → 0.14 BL and the face gains a three-dot smile + slightly bigger eyes. Still
+  the DESIGN blob — but a blob with a face is a buddy.
+
 ## 2026-11-26 — L1 Learning layer v1 — Word Freeze, sight words first
 
 Nick's direction ("selectable grade level learning… my son is working on sight words").
