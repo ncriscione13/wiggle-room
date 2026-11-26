@@ -1,5 +1,9 @@
 # Kid-friendly design notes (research, 2026-11-26)
 
+> Round 2 (game mining) is appended at the bottom: what the best kid games
+> (Happy Action Theater, EyeToy, Toca Boca, Cosmic Kids, PBS Kids, kid
+> racers) would add to OUR roadmap, with effort tags.
+
 Requested by Nick after the first family playtests ("they need to be dancing
 for longer, and it needs to be more kid-friendly"). Sources are listed at the
 bottom; each principle below names what Wiggle Room does about it.
@@ -104,3 +108,107 @@ validates the design — no change.
 - Attention spans ages 3–5 (engaged-activity minutes; large variance):
   [Speech Therapy Centres](https://speechtherapycentres.com/children-and-age-appropriate-attention-spans/),
   [Empowered Parents](https://empoweredparents.co/10-ways-to-develop-your-preschoolers-concentration-span/)
+
+---
+
+# Round 2: mining the great kid games (2026-11-26, same day)
+
+Nick: "Have you done any research into kids games that could improve our
+build?" — this pass mines specific titles for mechanics, mapped to our
+roadmap. Tags: **[validates]** = we already do it; **[quick]** = voice lines /
+config, days not weeks; **[M2]**/**[M4]** = slot into that phase's plan.
+
+## Double Fine Happy Action Theater / Kinect Party (Kinect)
+
+Tim Schafer built it so his 2-year-old could play with ZERO help: no
+instructions, no tutorials, no rules, **no failure state** — "more like a toy
+or playmate than a game"; it reacts to WHOEVER is in front of the sensor
+(grandma included). Widely loved as the best "everyone in the living room"
+Kinect thing ever made.
+
+- **[validates]** no-fail rules, benefit of the doubt, buddy-reacts-to-you.
+- **[M4 proposal] "Wiggle Toy" free-play mode:** one zero-rules scene — things
+  on screen react to ANY movement (swat the snowflakes, jumps burst confetti,
+  squats bounce the floor). No check screen gate, no round, no stars. It's
+  the party mode, the waiting-room mode, and the littlest-sibling mode. Our
+  architecture already fits (motion events -> particle reactions).
+
+## EyeToy: Play (PS2) — the camera-game pioneer
+
+Its whole appeal: you SEE yourself in the game, so comprehension is instant —
+"no learning curve, no buttons." Simple enough for young kids; relatives jump
+in without learning controls.
+
+- **[validates]** the mirrored live stage we just built for check/warm-up, and
+  buddies that copy the kid 1:1. The buddy is our privacy-preserving "you".
+
+## Toca Boca — "digital toys"
+
+Open-ended play modeled on dollhouses/LEGO; play for its own sake; famously
+no ads/dark patterns; **dense interactivity** — background elements reward
+curiosity instead of being decoration; deliberate quirky humor.
+
+- **[validates]** no accounts/no network/no scores-for-littles.
+- **[M2 proposal] reward curiosity:** moving during "idle" moments should do
+  SOMETHING silly (sparkle trails on big moves, snowflakes you can bat away
+  during the dance). Cheap once M2's jump/step detectors land.
+
+## Cosmic Kids Yoga — narrative carries movement
+
+The #1 kids' movement channel wraps every session in a STORY ("yoga poses
+become a cat, a warrior…"); presenter energy carries kids through 15+ minutes
+of movement; quests end with a certificate.
+
+- **[quick proposal] story-flavored round intros:** one themed narrator line
+  per round ("The snow bunnies woke up! Show them your best dancing!") —
+  voice lines only, rotating. Critter Dash's themed tracks (Snowy Meadow,
+  Autumn Forest) already lean this way; this brings a taste of it to Freeze.
+- **[quick/M4 proposal] goodbye tally ("certificate"):** the goodbye screen
+  says what TODAY earned — "14 stars! And the wobbliest wobble went to
+  Pink!" — spoken + shown. Later: a printable session certificate.
+
+## PBS Kids + incentive research
+
+Research-grounded points: reward PROGRESS and discovery, not points;
+non-competitive rewards (applause, audio-visual celebration) reinforce
+without pressure; positive feedback motivates while explanatory feedback
+teaches; kids are often unsure of a game's GOAL unless it is stated plainly.
+
+- **[validates]** stars-not-scores for Little; spoken goal at round start.
+- **[M4 proposal] sticker book:** per-profile collection screen — each
+  session/milestone adds a sticker (the pose-card art — star, flamingo,
+  tree, rocket — is already a sticker set waiting to exist). Profiles
+  already persist; this is the "ask to play again" retention mechanic
+  aimed straight at the playtest gate's bar.
+
+## Kid racers (for M2 Critter Dash)
+
+Mario Kart 8's auto-steer/auto-accelerate let actual preschoolers play;
+arcade racers keep everyone in contention with rubber-banding; kid racers
+favor shorter, wider tracks and gentler power-ups; the gentler titles avoid
+"Game Over" screens entirely.
+
+- **[validates]** DESIGN's "speed relative to each kid's own calibration,
+  plus gentle catch-up" is exactly the auto-assist + rubber-band pattern.
+- **[M2 proposal] auto-run floor:** the critter never fully stops — a resting
+  kid's critter trots slowly (auto-accelerate), so the youngest never stall
+  out of the race; their own steps add speed on top.
+
+## Round-2 sources
+
+- Happy Action Theater: [Wikipedia](https://en.wikipedia.org/wiki/Double_Fine_Happy_Action_Theater),
+  [Destructoid](https://www.destructoid.com/happy-action-theater-makes-you-feel-like-a-kid-again/),
+  [PureXbox review](https://www.purexbox.com/reviews/2012/02/double_fine_happy_action_theatre_360),
+  [Kinect Party](https://en.wikipedia.org/wiki/Kinect_Party)
+- EyeToy: [Wikipedia](https://en.wikipedia.org/wiki/EyeToy:_Play),
+  [GameVortex review](https://www.gamevortex.com/psillustrated/soft_rev.php/1553),
+  [Tech Frontier retrospective](https://techfrontier.com.au/charlieb/rise-and-fall-playstations-eyetoy/)
+- Toca Boca: [Motionographer on their design process](https://motionographer.com/2016/04/27/the-design-process-behind-toca-bocas-infectious-apps/),
+  [TechCrunch](https://techcrunch.com/2017/07/10/kids-app-maker-toca-boca-debuts-its-first-consumer-product-collection-at-target/)
+- Cosmic Kids: [Forbes profile](https://forbes.com/sites/davidphelan/2020/06/17/cosmic-kids-how-a-kids-yoga-app-became-a-world-beater/amp),
+  [Time Out](https://www.timeout.com/new-york-kids/sports-and-fitness/cosmic-kids-yoga)
+- PBS Kids & incentives: [SRI transmedia gaming study (PDF)](https://www.sri.com/wp-content/uploads/2021/12/gaming_body_feb_13_0.pdf),
+  [Common Sense on PBS KIDS PLAY!](https://www.commonsense.org/education/website/pbs-kids-play),
+  [Current.org on PBS Kids games](https://current.org/2024/04/growth-of-games-on-pbs-kids-aims-to-meet-children-where-they-are/),
+  [incentive-system study](https://www.researchgate.net/publication/372092532_The_Design_of_Incentive_Systems_in_Digital_Game-Based_Learning_How_Primary_School_Children_Interact_with_It)
+- Kid racers: [ScreenWise guide](https://screenwiseapp.com/guides/the-best-racing-games-for-kids)
