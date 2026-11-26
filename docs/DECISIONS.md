@@ -2,6 +2,27 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-26 — M0 tuning round 3 — attended measurements on Nick's desktop
+
+Three valid measurements on the same machine (GPU delegate, Chrome, real webcam):
+empty scene @320×240 ≈ 26 ms; **one person @320×240 = 29.6 ms avg / 37.8 p99** (ladder
+bottom, stable 1-pose detection, no flapping); one person @640×480 ≈ 36 ms. Conclusions:
+
+- **Base pipeline cost dominates (~26 ms); per-pose marginal cost is small (~4–6 ms);
+  input-size leverage is weak** (640→320 with a person: 36→30 ms). Two kids projected
+  ~34–38 ms on this class of machine. The 20 ms main-thread tracking budget is not
+  reachable in-browser here by knob-turning.
+- The earlier "2 poses" bench was phantom detections in an empty room (Nick wasn't in
+  frame); with a real person, detection held rock-solid at 320×240 even at desk framing.
+  Open item for M1 (tune on real clips): confidence/stability gating so phantom poses
+  can't pollute `posesSeen`.
+- The slow-device warning screen fired and rendered correctly end-to-end (verified by
+  screenshot).
+- **Decision pending Nick's OK: move tracking into a Web Worker** (DESIGN's own
+  escalation). Expected effect here: render back to 60 fps, pose interval from ~67 ms to
+  ~33–40 ms; end-to-end lag lands near the 100 ms target, inside the 120 ms hard limit.
+- TV machine still unmeasured; same `?recheck=1` + D procedure applies there.
+
 ## 2026-11-25 — M0 TV tuning round 2 — rVFC compositor starvation found by live drive
 
 Driving the deployed site in real desktop Chrome (headed, fake camera) on the dev
@@ -23,8 +44,9 @@ Machine-dependent: Nick's TV machine composited the off-screen video fine.
 
 ## 2026-11-25 — M0 TV tuning round 1 — Nick's first real numbers
 
-Nick's overlay on the TV machine: 640×480 @ 30 fps camera, **inference 36.0 ms avg /
-48.1 p99**, camera interval 67.9 ms (p99 133), render 19.3 ms (51.9 fps). Diagnosis:
+Nick's overlay (correction: from his desktop PC, not the TV — the TV machine is still
+unmeasured): 640×480 @ 30 fps camera, **inference 36.0 ms avg / 48.1 p99**, camera
+interval 67.9 ms (p99 133), render 19.3 ms (51.9 fps). Diagnosis:
 36 ms inference > 33 ms frame period → the rVFC loop (correctly, by design — no queuing)
 processes every other frame → 67 ms interval; main-thread inference also drags render to
 52 fps. Everything cascades from the inference number.
