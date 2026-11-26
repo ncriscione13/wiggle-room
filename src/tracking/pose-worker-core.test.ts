@@ -200,6 +200,68 @@ describe('pose worker core: track loop (M0.9)', () => {
   });
 });
 
+describe('ContinuousClock (M0.9 review: foreign time bases must not pin the timeline)', async () => {
+  const { ContinuousClock } = await import('./pose-worker-core');
+
+  it('re-anchors on rebase: a new stream with a LOWER base continues forward', () => {
+    const clock = new ContinuousClock();
+    expect(clock.next(1_000_000)).toBe(1_000_000);
+    clock.next(1_000_033);
+    clock.rebase();
+    const next = clock.next(5); // brand-new capture clock starting near 0
+    expect(next).toBeGreaterThan(1_000_033);
+    expect(next - 1_000_033).toBeLessThan(100); // ~one nominal frame, not pinned
+    // And the stream keeps native spacing afterwards.
+    expect(clock.next(38) - next).toBeCloseTo(33, 5);
+  });
+
+  it('small jitter still nudges by 1 µs, never backwards', () => {
+    const clock = new ContinuousClock();
+    clock.next(100);
+    expect(clock.next(100)).toBeCloseTo(100.001, 6);
+    expect(clock.next(99.5)).toBeGreaterThan(100.001);
+  });
+
+  it('a mid-stream base collapse re-anchors instead of pinning forever', () => {
+    const clock = new ContinuousClock();
+    clock.next(50_000);
+    clock.next(50_033);
+    const afterJump = clock.next(10); // base fell off a cliff with no rebase()
+    expect(afterJump).toBeGreaterThan(50_033);
+    // Follow-up frames advance at native spacing again -- NOT +1 µs steps.
+    expect(clock.next(43) - afterJump).toBeCloseTo(33, 5);
+  });
+});
+
+describe('pose worker core: track replacement (M0.9 review)', () => {
+  it('a second track message detaches the first: old track stopped, no forked loop', async () => {
+    const framesA = [makeFrame(1_000), makeFrame(34_000)];
+    const h = harness({ frames: framesA });
+    h.core.onMessage(INIT);
+    await flush();
+    h.core.onMessage({ type: 'track' }, h.track);
+    await flush();
+
+    const trackB: TrackLike & { stopped: boolean } = {
+      stopped: false,
+      stop(): void {
+        trackB.stopped = true;
+      },
+    };
+    const framesB = [makeFrame(500)];
+    if (h.reader) h.reader.cancelled = false; // give makeReader a fresh script
+    const readerB = makeScriptedReader(framesB);
+    h.reader = readerB;
+    h.core.onMessage({ type: 'track' }, trackB);
+    await flush();
+
+    expect(h.track?.stopped).toBe(true); // first clone released
+    expect(trackB.stopped).toBe(false);
+    const results = h.sent.filter((m) => m.type === 'result');
+    expect(results.length).toBeGreaterThanOrEqual(3); // both streams processed
+  });
+});
+
 describe('pose worker core: single frame mode (fallback path, M0.9)', () => {
   it('processes a shipped frame and closes it', async () => {
     const h = harness();

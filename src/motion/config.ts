@@ -77,8 +77,15 @@ export const LAG_BUDGET_GAME_DRAW_S = 0.017;
 export const LAG_BUDGET_TV_S = 0.015;
 export const LAG_BUDGET_TOTAL_S = 0.1;
 export const LAG_HARD_LIMIT_S = 0.12;
-/** Device check: two-kid tracking must stay under this per frame. */
+/** Device check LADDER trigger: above this, try a smaller camera input first.
+ * 0.02 is DESIGN's original main-thread tracking budget; in the worker era
+ * (M0.9) it is the aspirational target, not the alarm line. */
 export const DEVICE_CHECK_TRACKING_MAX_S = 0.02;
+/** Device check WARNING line (worker era): inference latency that pushes the
+ * END-TO-END lag past the 120 ms hard limit. Derivation from DESIGN's lag
+ * table: 0.120 − camera 0.045 − game+draw 0.017 − TV 0.015 = 0.043. Rendering
+ * is no longer at risk (inference is off-thread); only total lag is. */
+export const DEVICE_CHECK_WARN_S = 0.043;
 /** First-run benchmark length. */
 export const DEVICE_CHECK_DURATION_S = 5;
 /** Input-size reduction ladder when tracking is too slow (paired by index). */

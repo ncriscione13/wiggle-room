@@ -3,7 +3,7 @@
 // (dev only) mount the recorder + clip drag-and-drop.
 
 import { openCamera, CameraOpenError, type CameraHandle } from '../tracking/camera';
-import { DEVICE_CHECK_DURATION_S, DEVICE_CHECK_TRACKING_MAX_S } from '../motion/config';
+import { DEVICE_CHECK_DURATION_S, DEVICE_CHECK_WARN_S } from '../motion/config';
 import {
   createLiveTransport,
   createPoseWorker,
@@ -63,15 +63,22 @@ class BenchAborted extends Error {}
 interface LiveFactory {
   delegate: 'GPU' | 'CPU';
   locus: 'worker' | 'main';
-  make(camera: CameraHandle): { source: InstrumentedPoseSource; detail(): string };
+  make(camera: CameraHandle): {
+    source: InstrumentedPoseSource;
+    /** Resolved AFTER source.start(): 'track' | 'bitmap' | 'main'. */
+    mode(): string;
+  };
   close(): void;
 }
 
 async function createLiveFactory(): Promise<LiveFactory> {
-  // Tuning knob: ?delegate=cpu|gpu pins the worker's inference delegate.
-  const raw = new URLSearchParams(window.location.search).get('delegate');
+  // Tuning knobs: ?delegate=cpu|gpu pins the worker's inference delegate;
+  // ?transport=bitmap forces the rVFC/ImageBitmap fallback transport.
+  const params = new URLSearchParams(window.location.search);
+  const rawDelegate = params.get('delegate');
   const pinned: readonly ('GPU' | 'CPU')[] | undefined =
-    raw === 'cpu' ? ['CPU'] : raw === 'gpu' ? ['GPU'] : undefined;
+    rawDelegate === 'cpu' ? ['CPU'] : rawDelegate === 'gpu' ? ['GPU'] : undefined;
+  const forceBitmap = params.get('transport') === 'bitmap';
   try {
     const handle = await createPoseWorker(
       undefined,
@@ -81,10 +88,10 @@ async function createLiveFactory(): Promise<LiveFactory> {
       delegate: handle.delegate,
       locus: 'worker',
       make(camera: CameraHandle) {
-        const info = createLiveTransport(handle.worker, camera, handle.hasMSTP);
+        const info = createLiveTransport(handle.worker, camera, handle.hasMSTP, { forceBitmap });
         return {
           source: new WorkerPoseSource({ handle, transport: info.transport }),
-          detail: () => `worker · ${info.mode()}`,
+          mode: () => info.mode(),
         };
       },
       close: () => {
@@ -99,7 +106,7 @@ async function createLiveFactory(): Promise<LiveFactory> {
       locus: 'main',
       make: (camera: CameraHandle) => ({
         source: new LivePoseSource({ video: camera.video, landmarker: handle.landmarker }),
-        detail: () => 'main thread',
+        mode: () => 'main',
       }),
       close: () => {
         handle.close();
@@ -180,8 +187,14 @@ async function bootLagTest(root: HTMLElement, config: SourceConfig): Promise<voi
     camera = await openCamera();
     factory = await createLiveFactory();
     const live = factory.make(camera).source;
+    const cam = camera;
+    const fac = factory;
     live.onError(() => {
-      renderCameraErrorScreen(root, 'unknown');
+      // Mid-session tracking failure: release everything before the screen
+      // (M0.9 review -- no webcam LED behind an error screen, ever).
+      cam.stop();
+      fac.close();
+      renderCameraErrorScreen(root, 'model');
     });
     await live.start();
     mountLagTestScreen(root, live);
@@ -205,8 +218,13 @@ async function bootRecord(root: HTMLElement): Promise<void> {
     camera = await openCamera();
     factory = await createLiveFactory();
     const live = factory.make(camera).source;
+    const fac = factory;
     live.onError(() => {
-      renderCameraErrorScreen(root, 'unknown');
+      // Mid-session tracking failure: full teardown before the screen.
+      session?.destroy(); // stops stage/overlay/source + camera
+      session = null;
+      fac.close();
+      renderCameraErrorScreen(root, 'model');
     });
     const cam = camera;
     startStageSession(root, live, 'recording mode', () => {
@@ -265,10 +283,23 @@ export async function bootApp(root: HTMLElement): Promise<void> {
   const labelOf = (c: CameraHandle): string =>
     `${String(c.widthPx)}×${String(c.heightPx)} @ ${String(c.fps)} fps`;
 
+  // ?recheck=1 forgets the stored benchmark BEFORE it can influence anything.
+  if (new URLSearchParams(window.location.search).has('recheck')) {
+    clearDeviceCheckRecord();
+  }
+  // The ladder's chosen input size persists across launches (M0.9 review:
+  // it used to apply for the first session only, which made the stored
+  // record describe a configuration that wasn't running).
+  const storedRecord = loadDeviceCheckRecord();
+
   let camera: CameraHandle;
   let chip: HTMLElement;
   try {
-    camera = await openCamera();
+    camera = await openCamera(
+      storedRecord !== null
+        ? { widthPx: storedRecord.widthPx, heightPx: storedRecord.heightPx }
+        : {},
+    );
     chip = mountStatusChip(root, 'camera-chip', `Camera ${labelOf(camera)} · starting tracking…`);
   } catch (error) {
     const kind = error instanceof CameraOpenError ? error.kind : 'unknown';
@@ -281,17 +312,32 @@ export async function bootApp(root: HTMLElement): Promise<void> {
     factory = await createLiveFactory();
     const f = factory;
 
+    /** Mid-session tracking failure: release everything, then the screen
+     * (M0.9 review -- no webcam LED or ticking chip behind an error). */
+    const failLive = (): void => {
+      session?.destroy();
+      session = null;
+      if (liveTeardown !== null) {
+        liveTeardown();
+      } else {
+        chip.remove();
+        f.close();
+      }
+      renderCameraErrorScreen(root, 'model');
+    };
+
+    let trackingLabel = `${f.delegate}·${f.locus}`;
     const attach = async (cam: CameraHandle): Promise<InstrumentedPoseSource> => {
       const made = f.make(cam);
       const live = made.source;
-      live.onError(() => {
-        renderCameraErrorScreen(root, 'unknown');
-      });
+      live.onError(failLive);
       const s = startStageSession(root, live, labelOf(cam), () => {
         cam.stop();
       });
       await live.start();
-      s.overlay.events.push(`tracking started · ${f.delegate} · ${made.detail()}`, 0);
+      trackingLabel =
+        f.locus === 'worker' ? `${f.delegate}·worker(${made.mode()})` : `${f.delegate}·main`;
+      s.overlay.events.push(`tracking started · ${trackingLabel}`, 0);
       return live;
     };
 
@@ -306,12 +352,6 @@ export async function bootApp(root: HTMLElement): Promise<void> {
         session?.overlay.events.push('no video frames after 3 s (compositor stall?)', 0);
       }
     }, 3000);
-
-    // Tuning hook: ?recheck=1 forgets the stored benchmark so the check and
-    // its input-size ladder run again under current real conditions.
-    if (new URLSearchParams(window.location.search).has('recheck')) {
-      clearDeviceCheckRecord();
-    }
 
     // M0.6: first-run device check (skipped once a record exists). A bench
     // that can't finish (source stopped) aborts without saving a record.
@@ -365,11 +405,13 @@ export async function bootApp(root: HTMLElement): Promise<void> {
     // passively and upgrade the record (review fix: a one-person first run
     // must never stand as the two-kid number forever).
     let upgrading = false;
+    // Cached so the per-frame watcher never touches localStorage on the hot
+    // path (M0.9 review); refreshed on every save.
+    let cachedRecord = loadDeviceCheckRecord();
     const offUpgrade = live.onFrame((frame) => {
       if (upgrading) return;
       const posesNow = frame.poses.filter((p) => p !== null).length;
-      const record = loadDeviceCheckRecord();
-      if (!shouldUpgradeBenchmark(record, posesNow)) return;
+      if (!shouldUpgradeBenchmark(cachedRecord, posesNow)) return;
       upgrading = true;
       const liveNow = live;
       void (async (): Promise<void> => {
@@ -377,15 +419,18 @@ export async function bootApp(root: HTMLElement): Promise<void> {
         const current = loadDeviceCheckRecord();
         if (bench !== null && current !== null) {
           const summary = summarizeSamples(bench.samplesS);
-          const overBudget = summary.avgS > DEVICE_CHECK_TRACKING_MAX_S;
-          saveDeviceCheckRecord({
+          // Worker era: warn only when latency blows the lag hard limit.
+          const overBudget = summary.avgS > DEVICE_CHECK_WARN_S;
+          const updated = {
             ...current,
             avgMs: round1(summary.avgS * 1000),
             p99Ms: round1(summary.p99S * 1000),
             posesSeen: Math.max(current.posesSeen, bench.maxPoses),
             warned: current.warned || overBudget,
             atMs: Date.now(),
-          });
+          };
+          saveDeviceCheckRecord(updated);
+          cachedRecord = updated;
           session?.overlay.events.push(
             `device check upgraded · ${String(bench.maxPoses)} poses · ` +
               `avg ${round1(summary.avgS * 1000).toFixed(1)} ms`,
@@ -401,7 +446,7 @@ export async function bootApp(root: HTMLElement): Promise<void> {
       const poseCount = live.latest()?.poses.filter((p) => p !== null).length ?? 0;
       chip.textContent =
         `Tracking · ${String(live.frames())} frames · ${String(poseCount)} poses · ` +
-        `${labelOf(camera)} · ${f.delegate}·${f.locus}`;
+        `${labelOf(camera)} · ${trackingLabel}`;
     };
     const chipInterval = window.setInterval(update, 500);
 

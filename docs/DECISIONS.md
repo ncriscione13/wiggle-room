@@ -2,6 +2,42 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-26 — M0.9 fresh-eyes review — 12 findings, all addressed
+
+- **Mid-session tracking errors now tear everything down** (camera, chip interval,
+  watcher, worker) before showing the purpose-built 'model' screen — in all three boot
+  paths. Previously only BOOT failures cleaned up; a mid-game worker error left the
+  webcam lit behind "unplug your webcam" advice.
+- **Device-check semantics rebased for the worker era** (FLAGGED FOR NICK — this changes
+  a design number): 20 ms (DESIGN's main-thread tracking budget) remains the input-ladder
+  target, but the parent warning now fires only above **DEVICE_CHECK_WARN_S = 43 ms** —
+  derived as hard-lag-limit 120 − camera 45 − draw 17 − TV 15. Rationale: the worker
+  guarantees 60 fps rendering regardless of inference cost, so the only thing inference
+  can still hurt is total latency. Without this, every known machine (25–30 ms
+  CPU-in-worker) would ladder to 320×240 AND scare parents while performing best-ever.
+  The 25-ms-at-bottom case is test-pinned as ladder-yes/warn-no.
+- **The ladder's chosen camera size now persists**: boots read the stored record's
+  width/height into `openCamera` (previously first-session-only — the record described a
+  configuration that wasn't running). `?recheck=1` clears before the read, restoring
+  full size for the re-benchmark.
+- **ContinuousClock replaces the bare monotonic clamp in the worker**: VideoFrame
+  capture clocks, main `performance.now` and worker `performance.now` have unrelated
+  bases; one backwards base jump would have pinned the timeline to +1 µs steps forever
+  (freezing benches un-savably). The clock re-anchors on every track attach and on any
+  > 1 s backwards jump, continuing the output timeline one nominal frame later. A second
+  > 'track' message also detaches the first (no forked read loops, old clone stopped).
+- **Both transports are now exercised**: `?transport=bitmap` pins the fallback and a new
+  e2e runs it end to end; the chip shows the mode (`CPU·worker(track)`) and specs assert
+  `worker(` so an unlabeled or fallen-back path fails CI. Bitmap hygiene: generation
+  guard (no stale pre-stop frames), bitmap closed when transfer throws.
+- Also: a worker `error` event listener fails the handshake fast (a missing chunk no
+  longer costs the 30 s timeout — noted interaction with SW autoUpdate: the worker is
+  now a runtime-fetched chunk, strengthening the M3 revisit); `close()` just terminates
+  (the pre-terminate message never ran); the live-fps perf test asserts frames flowed
+  across the measurement (no vacuous 60 fps over a stalled pipeline); the upgrade
+  watcher reads a cached record instead of localStorage per frame; PLAN's M0 report and
+  acceptance line updated for worker-era numbers so Nick's TV script matches the build.
+
 ## 2026-11-26 — M0.9 — Worker tracking (and the GPU-in-worker trap)
 
 - **Architecture**: one tracking worker per app boot holds the MediaPipe model across

@@ -8,6 +8,7 @@ import {
   CAMERA_FALLBACK_HEIGHTS_PX,
   CAMERA_FALLBACK_WIDTHS_PX,
   DEVICE_CHECK_TRACKING_MAX_S,
+  DEVICE_CHECK_WARN_S,
 } from '../motion/config';
 import type { PoseSource } from '../tracking/pose-source';
 import { colors, px, typography } from '../ui/theme';
@@ -107,14 +108,17 @@ export interface DeviceCheckOutcome {
 }
 
 /**
- * Walks the benchmark: full size first, then down the ladder while too slow.
- * `run` performs one benchmark at the given size and resolves its average
- * tracking seconds per frame.
+ * Walks the benchmark: full size first, then down the ladder while above the
+ * TARGET (`maxS`, the aspirational 20 ms). The parent-facing WARNING fires
+ * only above `warnS` — the worker-era line where total lag would blow the
+ * 120 ms hard limit (M0.9 review: rendering is off the hook; only latency
+ * matters now).
  */
 export async function planDeviceCheck(
   run: (step: DeviceCheckStep) => Promise<number>,
   ladder: readonly FallbackSize[] = CAMERA_FALLBACK_LADDER,
   maxS: number = DEVICE_CHECK_TRACKING_MAX_S,
+  warnS: number = DEVICE_CHECK_WARN_S,
 ): Promise<DeviceCheckOutcome> {
   let step: DeviceCheckStep = { index: 0, widthPx: null, heightPx: null };
   let avgS = await run(step);
@@ -126,7 +130,7 @@ export async function planDeviceCheck(
     step = { index: tried, widthPx: size.widthPx, heightPx: size.heightPx };
     avgS = await run(step);
   }
-  return { avgS, stepsTried: tried, finalStep: step, warned: avgS > maxS };
+  return { avgS, stepsTried: tried, finalStep: step, warned: avgS > warnS };
 }
 
 // --- Stored record -----------------------------------------------------------

@@ -57,8 +57,16 @@ test('rendering holds 60 fps while live tracking runs in the worker', async ({ p
   await page.goto('/');
   const chip = page.getByTestId('camera-chip');
   await expect(chip).toContainText('Tracking', { timeout: 90_000 });
-  await expect(chip).toContainText('worker');
+  await expect(chip).toContainText('worker(');
   await page.waitForTimeout(800); // let the loops settle
 
+  // Guard against a vacuous pass (M0.9 review): 60 fps over a STALLED
+  // pipeline proves nothing, so frames must flow across the measurement.
+  const frameCount = async (): Promise<number> =>
+    Number(/(\d+) frames/.exec((await chip.textContent()) ?? '')?.[1] ?? '0');
+  const framesBefore = await frameCount();
+
   expect(await measureFps(page)).toBeGreaterThan(55);
+
+  await expect.poll(frameCount, { timeout: 10_000 }).toBeGreaterThan(framesBefore + 10);
 });

@@ -12,8 +12,8 @@ import type { FrameHandler, InstrumentedPoseSource, PoseFrame } from './pose-sou
 
 export interface WorkerLike {
   postMessage(message: unknown, transfer?: Transferable[]): void;
-  addEventListener(type: 'message', fn: (e: { data: unknown }) => void): void;
-  removeEventListener(type: 'message', fn: (e: { data: unknown }) => void): void;
+  addEventListener(type: 'message' | 'error', fn: (e: { data?: unknown }) => void): void;
+  removeEventListener(type: 'message' | 'error', fn: (e: { data?: unknown }) => void): void;
   terminate(): void;
 }
 
@@ -48,33 +48,46 @@ export function createPoseWorker(
     delegateOrder: options.delegateOrder ?? ['CPU', 'GPU'],
   });
   return new Promise<PoseWorkerHandle>((resolve, reject) => {
-    const timer = setTimeout(() => {
+    const cleanup = (): void => {
+      clearTimeout(timer);
       worker.removeEventListener('message', onMessage);
+      worker.removeEventListener('error', onErrorEvent);
+    };
+    const timer = setTimeout(() => {
+      cleanup();
       worker.terminate();
       reject(new Error('pose worker init timed out'));
     }, INIT_TIMEOUT_MS);
-    const onMessage = (e: { data: unknown }): void => {
+    // A worker-script LOAD failure (missing chunk, top-level throw) emits an
+    // `error` event, never a message -- without this listener the app would
+    // sit out the full timeout before falling back (M0.9 review).
+    const onErrorEvent = (): void => {
+      cleanup();
+      worker.terminate();
+      reject(new Error('pose worker script failed to load'));
+    };
+    const onMessage = (e: { data?: unknown }): void => {
       const data = e.data as OutMessage;
       if (data.type === 'ready') {
-        clearTimeout(timer);
-        worker.removeEventListener('message', onMessage);
+        cleanup();
         resolve({
           worker,
           delegate: data.delegate,
           hasMSTP: data.hasMSTP,
+          // terminate() reclaims the whole realm, incl. the transferred clone
+          // track and the landmarker; a pre-terminate message never runs.
           close: () => {
-            worker.postMessage({ type: 'close' });
             worker.terminate();
           },
         });
       } else if (data.type === 'init-error') {
-        clearTimeout(timer);
-        worker.removeEventListener('message', onMessage);
+        cleanup();
         worker.terminate();
         reject(new Error(`pose worker init failed: ${data.message}`));
       }
     };
     worker.addEventListener('message', onMessage);
+    worker.addEventListener('error', onErrorEvent);
   });
 }
 
@@ -100,13 +113,17 @@ export function createLiveTransport(
   worker: WorkerLike,
   camera: { stream: MediaStream; video: HTMLVideoElement },
   hasMSTP: boolean,
+  options: { forceBitmap?: boolean } = {},
 ): TransportInfo {
   let mode: 'track' | 'bitmap' | 'idle' = 'idle';
   let running = false;
   let busy = false;
+  let generation = 0;
   let rvfcHandle: number | null = null;
 
-  const onWorkerMessage = (e: { data: unknown }): void => {
+  // `busy` is a best-effort throttle (a foreign late result could clear it a
+  // beat early); the worker's LatestFrameGate is the actual serializer.
+  const onWorkerMessage = (e: { data?: unknown }): void => {
     const t = (e.data as { type?: string }).type;
     if (t === 'result' || t === 'error') busy = false;
   };
@@ -117,14 +134,23 @@ export function createLiveTransport(
       if (!running) return;
       if (!busy) {
         busy = true;
+        const gen = generation;
         createImageBitmap(camera.video)
           .then((bitmap) => {
-            if (!running) {
+            // A stop() (or stop+start) landed while the bitmap was baking:
+            // never ship a stale pre-stop frame (M0.9 review).
+            if (!running || gen !== generation) {
               bitmap.close();
               busy = false;
               return;
             }
-            worker.postMessage({ type: 'frame', tMs: nowMs, bitmap }, [bitmap]);
+            try {
+              worker.postMessage({ type: 'frame', tMs: nowMs, bitmap }, [bitmap]);
+            } catch (error) {
+              bitmap.close(); // a failed transfer must not leak the bitmap
+              busy = false;
+              throw error;
+            }
           })
           .catch(() => {
             busy = false;
@@ -139,7 +165,8 @@ export function createLiveTransport(
     transport: {
       start(): void {
         running = true;
-        if (hasMSTP) {
+        generation += 1;
+        if (hasMSTP && options.forceBitmap !== true) {
           const original = camera.stream.getVideoTracks()[0];
           if (original !== undefined) {
             const clone = original.clone();
@@ -191,7 +218,7 @@ export class WorkerPoseSource implements InstrumentedPoseSource {
   private baseMs: number | null = null;
   private running = false;
   private generation = 0;
-  private listener: ((e: { data: unknown }) => void) | null = null;
+  private listener: ((e: { data?: unknown }) => void) | null = null;
 
   constructor(options: WorkerPoseSourceOptions) {
     this.handle = options.handle;

@@ -122,6 +122,14 @@ describe('lag budget (DESIGN.md "Lag budget" table, in seconds)', () => {
     expect(config.BENCH_MOTION_KIT_AVG_MAX_S).toBe(0.001);
     expect(config.BENCH_MOTION_KIT_P99_MAX_S).toBe(0.002);
   });
+  it('worker-era warning line derives from the hard lag limit (M0.9 review)', () => {
+    const derived =
+      config.LAG_HARD_LIMIT_S -
+      config.LAG_BUDGET_CAMERA_S -
+      config.LAG_BUDGET_GAME_DRAW_S -
+      config.LAG_BUDGET_TV_S;
+    expect(config.DEVICE_CHECK_WARN_S).toBeCloseTo(derived, 10);
+  });
 });
 
 describe('comfort and fairness invariants', () => {

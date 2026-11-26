@@ -58,7 +58,7 @@ describe('planDeviceCheck (M0.6)', () => {
     expect(result.warned).toBe(false);
   });
 
-  it('slow everywhere: walks the whole ladder, then warns', async () => {
+  it('slow everywhere: walks the whole ladder, then warns (over the 43 ms lag line)', async () => {
     const seen: (number | null)[] = [];
     const result = await planDeviceCheck((step) => {
       seen.push(step.widthPx);
@@ -67,6 +67,12 @@ describe('planDeviceCheck (M0.6)', () => {
     expect(seen).toEqual([null, 480, 320]);
     expect(result.warned).toBe(true);
     expect(result.finalStep.widthPx).toBe(320);
+  });
+
+  it('worker-era middle ground: above the 20 ms target but under the 43 ms lag line walks the ladder WITHOUT warning (M0.9 review)', async () => {
+    const result = await planDeviceCheck(() => Promise.resolve(0.026), ladder);
+    expect(result.stepsTried).toBe(2); // tried to get faster
+    expect(result.warned).toBe(false); // but 26 ms does not blow the lag limit
   });
 });
 

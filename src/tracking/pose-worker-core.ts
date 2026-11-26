@@ -6,8 +6,52 @@
 // newest frame wins, superseded frames are closed immediately.
 
 import { LatestFrameGate } from './latest-frame-gate';
-import { convertPoseResult, MonotonicClock, type PoseResultLike } from './live-pose-source';
+import { convertPoseResult, type PoseResultLike } from './live-pose-source';
 import type { ClipPose } from './clip-format';
+
+/**
+ * Timestamp continuity across foreign time bases (M0.9 review finding). The
+ * worker outlives camera attaches, but VideoFrame capture clocks, main-thread
+ * performance.now and worker performance.now have unrelated bases. A naive
+ * monotonic clamp would pin the whole timeline to +1 µs steps forever after
+ * one backwards base jump (freezing benches and MediaPipe's temporal
+ * filtering). This clock re-anchors instead: on every attach (and on any
+ * backwards jump bigger than jitter) the next stamp continues the output
+ * timeline one nominal frame later.
+ */
+export class ContinuousClock {
+  private lastOut = -Infinity;
+  private offsetMs = 0;
+  private rebaseNext = true;
+  private static readonly NOMINAL_GAP_MS = 33.3;
+  private static readonly JITTER_TOLERANCE_MS = 1000;
+
+  /** Forget the current base: the next stamp re-anchors (new track/source). */
+  rebase(): void {
+    this.rebaseNext = true;
+  }
+
+  next(rawMs: number): number {
+    if (this.rebaseNext) {
+      const target =
+        this.lastOut === -Infinity ? rawMs : this.lastOut + ContinuousClock.NOMINAL_GAP_MS;
+      this.offsetMs = target - rawMs;
+      this.rebaseNext = false;
+    }
+    let out = rawMs + this.offsetMs;
+    if (out <= this.lastOut) {
+      if (out < this.lastOut - ContinuousClock.JITTER_TOLERANCE_MS) {
+        // The base itself jumped backwards mid-stream: re-anchor, don't pin.
+        this.offsetMs += this.lastOut + ContinuousClock.NOMINAL_GAP_MS - out;
+        out = this.lastOut + ContinuousClock.NOMINAL_GAP_MS;
+      } else {
+        out = this.lastOut + 0.001; // ordinary jitter: nudge forward
+      }
+    }
+    this.lastOut = out;
+    return out;
+  }
+}
 
 export interface LandmarkerConfig {
   wasmRoot: string;
@@ -68,7 +112,7 @@ export interface WorkerCoreDeps {
 export function createWorkerCore(deps: WorkerCoreDeps): {
   onMessage(message: InMessage, track?: TrackLike, frame?: FrameLike): void;
 } {
-  const clock = new MonotonicClock();
+  const clock = new ContinuousClock();
   const gate = new LatestFrameGate<{ frame: FrameLike; tMs: number | null }>((item) => {
     item.frame.close();
   });
@@ -167,6 +211,10 @@ export function createWorkerCore(deps: WorkerCoreDeps): {
           break;
         case 'track':
           if (incomingTrack === undefined) break;
+          // A second track without a detach must not fork read loops or leak
+          // the old clone (M0.9 review): tear the old one down first.
+          detachInternals();
+          clock.rebase(); // new stream = possibly foreign timestamp base
           detached = false;
           failed = false;
           track = incomingTrack;
