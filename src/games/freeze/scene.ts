@@ -6,8 +6,10 @@
 import Phaser from 'phaser';
 import {
   FREEZE_SLOWMO_ROUND_INTERVAL_COUNT,
+  FREEZE_SNOWSTORM_BURST_S,
   FREEZES_PER_ROUND_COUNT,
   GAME_INTRO_S,
+  MUSIC_FADE_S,
 } from '../../motion/config';
 import { paintBuddy, type BuddyViewport } from '../../ui/buddy';
 import { buddyShapes } from '../../ui/buddy-geometry';
@@ -56,8 +58,13 @@ interface Snowflake {
 class FreezeScene extends Phaser.Scene {
   private readonly ctx: GameContext;
   private readonly core: FreezeCore;
-  private readonly nowS = (): number => performance.now() / 1000;
+  /** THE game clock is the motion clock (ctx.motion.nowS). Live sources
+   * zero-base their time, so performance.now() here would put core ticks and
+   * motion events whole minutes apart (M1 review blocker). */
+  private readonly nowS = (): number => this.ctx.motion.nowS();
   private readonly reactions = [new BuddyReactions(), new BuddyReactions()];
+  private snowstormUntilS = -Infinity;
+  private firstWinSaid = false;
   private buddyGfx: Phaser.GameObjects.Graphics[] = [];
   private meterGfx!: Phaser.GameObjects.Graphics;
   private cardGfx!: Phaser.GameObjects.Graphics;
@@ -77,11 +84,17 @@ class FreezeScene extends Phaser.Scene {
     super('freeze');
     this.ctx = ctx;
     // Dev/test knobs: shorter rounds; sensible clamps so a typo can't hang.
+    const defaultFreezes =
+      FREEZES_PER_ROUND_COUNT.min +
+      Math.floor(Math.random() * (FREEZES_PER_ROUND_COUNT.max - FREEZES_PER_ROUND_COUNT.min + 1));
     const freezes = Math.min(
       12,
-      Math.max(1, Number(search.get('freezes') ?? '') || FREEZES_PER_ROUND_COUNT.min),
+      Math.max(1, Number(search.get('freezes') ?? '') || defaultFreezes),
     );
-    const introS = Math.min(GAME_INTRO_S, Math.max(0.5, Number(search.get('intro') ?? '') || 4));
+    const introS = Math.min(
+      GAME_INTRO_S,
+      Math.max(0.5, Number(search.get('intro') ?? '') || GAME_INTRO_S),
+    );
     const round = Math.max(1, Number(search.get('round') ?? '') || 1);
     // Test knob: ?rng=0 pins every random duration to its range minimum so
     // e2e timelines are deterministic.
@@ -93,7 +106,9 @@ class FreezeScene extends Phaser.Scene {
       ],
       freezes,
       slowMo: round % FREEZE_SLOWMO_ROUND_INTERVAL_COUNT === 0,
-      audioDelayS: ctx.audio.outputDelayS,
+      // The stop reaches the room after the output delay AND the soft fade
+      // (DESIGN "Fair timing": grace starts when the stop is audible).
+      audioDelayS: ctx.audio.outputDelayS + MUSIC_FADE_S,
       introS,
       rng: rngPin !== null ? () => Math.min(1, Math.max(0, Number(rngPin))) : Math.random,
     });
@@ -137,6 +152,11 @@ class FreezeScene extends Phaser.Scene {
         this.core.onStill(e.slot, e.tS);
       }),
     );
+    // Phaser never calls a custom destroy(); hook the scene lifecycle so
+    // replay rounds don't leak listeners into the shared MotionSource.
+    this.events.once(Phaser.Scenes.Events.DESTROY, () => {
+      for (const off of this.offs) off();
+    });
 
     // Buddies wave hello while the intro line plays.
     for (const r of this.reactions) r.trigger('wave', this.nowS());
@@ -154,10 +174,6 @@ class FreezeScene extends Phaser.Scene {
     this.drawMeters();
     this.updateSnow();
     this.checkPoseCard();
-  }
-
-  destroy(): void {
-    for (const off of this.offs) off();
   }
 
   private apply(d: FreezeDirective, tS: number): void {
@@ -190,6 +206,11 @@ class FreezeScene extends Phaser.Scene {
         break;
       case 'star': {
         this.hooks.stars[d.slot] += 1;
+        if (!this.firstWinSaid) {
+          // DESIGN "first win within 10 s": the very first star gets praise.
+          this.firstWinSaid = true;
+          this.ctx.voice.say('game.first-win', { player: d.slot });
+        }
         this.reactions[d.slot]?.trigger('cheer', tS);
         const x = slotScreenX(d.slot) + STAGE_W * 0.25;
         const star = this.add
@@ -212,7 +233,8 @@ class FreezeScene extends Phaser.Scene {
         break;
       }
       case 'snowstorm':
-        this.snowing = true;
+        // The co-op moment gets its own dense burst that outlives the stop.
+        this.snowstormUntilS = tS + FREEZE_SNOWSTORM_BURST_S;
         break;
       case 'pose-card':
         this.currentCard = d.card;
@@ -259,15 +281,19 @@ class FreezeScene extends Phaser.Scene {
 
   private updateSnow(): void {
     const dtS = this.game.loop.delta / 1000;
+    const bursting = this.nowS() < this.snowstormUntilS;
     for (const [i, flake] of this.snow.entries()) {
       if (!flake.dot.visible) {
-        if (this.snowing && Math.random() < dtS * 0.6) {
+        // Gentle drift during stops; a dense (still slow) flurry for the
+        // team snowstorm. Never flashing -- just more flakes.
+        const spawnPerS = bursting ? 6 : this.snowing ? 0.6 : 0;
+        if (spawnPerS > 0 && Math.random() < dtS * spawnPerS) {
           flake.dot.setVisible(true);
           flake.dot.setPosition(Math.random() * STAGE_W, -10 - (i % 5) * 8);
         }
         continue;
       }
-      flake.dot.y += flake.speed * dtS;
+      flake.dot.y += flake.speed * dtS * (bursting ? 1.5 : 1);
       flake.dot.x += flake.drift * dtS;
       if (flake.dot.y > STAGE_H + 10) flake.dot.setVisible(false);
     }
@@ -277,7 +303,9 @@ class FreezeScene extends Phaser.Scene {
     if (this.currentCard === null) return;
     for (const slot of SLOTS) {
       const pose = this.ctx.motion.pose(slot);
-      if (pose !== null && matchesCard(pose, this.currentCard)) {
+      // Only a LIVE pose can match (a held coasting pose is not the kid
+      // posing; the bonus never comes from a guess).
+      if (pose !== null && pose.fresh && matchesCard(pose, this.currentCard)) {
         this.core.setPoseMatched(slot, true);
       }
     }

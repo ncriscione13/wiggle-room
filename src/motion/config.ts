@@ -226,6 +226,22 @@ export const WARMUP_HOP_REPS_COUNT = 3;
 export const WARMUP_RUN_IN_PLACE_S = 5;
 /** A move not picked up after 2 tries gets a slower demo, then the default. */
 export const WARMUP_MAX_TRIES_COUNT = 2;
+/** Measurement internals (M1 review: thresholds belong here, rule 5). */
+export const WARMUP_MIN_STAND_FRAMES_COUNT = 10;
+export const WARMUP_MIN_WOBBLE_SAMPLES_COUNT = 20;
+export const WARMUP_PLAUSIBLE_REACH_MIN_BL = 1.2;
+export const WARMUP_PLAUSIBLE_SPAN_MIN_BL = 1.2;
+/** A squat only counts once the hips really dropped below this ratio. */
+export const WARMUP_PLAUSIBLE_SQUAT_MAX_RATIO = 0.85;
+/** Hop detection hysteresis on the hip rise, in BL. */
+export const WARMUP_HOP_RISE_HI_BL = 0.15;
+export const WARMUP_HOP_RISE_LO_BL = 0.05;
+/** Step detection: knee lift above its standing spot (~this far below the
+ * hips), with hysteresis, in BL. */
+export const WARMUP_KNEE_STAND_BELOW_HIP_BL = 0.8;
+export const WARMUP_STEP_KNEE_LIFT_HI_BL = 0.25;
+export const WARMUP_STEP_KNEE_LIFT_LO_BL = 0.1;
+export const WARMUP_MIN_STEPS_COUNT = 4;
 /** The still line sits "just above their wobble": wobble × this. */
 export const STILL_LINE_FROM_WOBBLE_COEFF = 1.5;
 /** Age-mode fallbacks per calibration field when a move is skipped.
@@ -289,6 +305,8 @@ export const FREEZE_METER_FILL_S = 4;
 export const FREEZE_WOBBLE_FORGIVE_S: PerAgeMode = { little: 0.6, big: 0.3 };
 /** Big mode: a pose card replaces a plain freeze every Nth stop. */
 export const FREEZE_POSE_CARD_EVERY_COUNT = 2;
+/** The team-snowstorm flurry lasts this long into the next dance. */
+export const FREEZE_SNOWSTORM_BURST_S = 2;
 /** Big-mode scoring (points are unitless). */
 export const FREEZE_SCORE_BASE_PTS = 100;
 export const FREEZE_SCORE_REACTION_PENALTY_PTS_PER_S = 100;

@@ -91,6 +91,10 @@ export class KeyboardMotion implements MotionSource {
     return this.slotSeen[slot] ? 'tracked' : 'paused';
   }
 
+  nowS(): number {
+    return this.now();
+  }
+
   private onKeyDown(e: KeyLikeEvent): void {
     const tS = this.now();
     if (e.key === 'Tab') {

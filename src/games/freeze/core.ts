@@ -261,11 +261,19 @@ export class FreezeCore {
       // Start a dance segment.
       if (this.phaseName === 'stop') {
         this.out.push({ type: 'unfreeze' });
-        this.say('freeze.unfreeze');
+        // Alternate the wording family so it never drones.
+        this.say(this.stopIndex % 2 === 0 ? 'freeze.unfreeze' : 'freeze.dance');
       }
       this.phaseName = 'dance';
       for (const slot of SLOTS) this.meters[slot] = 0;
-      this.out.push({ type: 'music', id: this.cfg.slowMo ? 'freeze-slow' : 'freeze-mid' });
+      // Tempo variety (DESIGN: three loops): slow-mo rounds slow, all-Big
+      // rounds fast, Little/mixed rounds mid.
+      const musicId = this.cfg.slowMo
+        ? 'freeze-slow'
+        : this.timingMode() === 'big'
+          ? 'freeze-fast'
+          : 'freeze-mid';
+      this.out.push({ type: 'music', id: musicId });
       this.phaseEndS = atS + pick(FREEZE_MUSIC_GAP_S[this.timingMode()], this.cfg.rng);
       return;
     }
@@ -292,7 +300,9 @@ export class FreezeCore {
         }
       }
       this.out.push({ type: 'music-stop' }, { type: 'sfx', id: 'swirl' });
-      this.say('freeze.freeze');
+      // DESIGN Voice guide: Little mode gets a voiced "Freeze!"; Big mode
+      // plays the harder game -- the music stop IS the cue.
+      if (this.timingMode() === 'little') this.say('freeze.freeze');
       const bigPresent = this.activeSlots().some((s) => this.cfg.players[s].mode === 'big');
       this.stopHasCard = bigPresent && this.stopIndex % FREEZE_POSE_CARD_EVERY_COUNT === 1;
       if (this.stopHasCard) {

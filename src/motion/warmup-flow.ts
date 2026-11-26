@@ -5,10 +5,15 @@
 
 import type { AgeMode, Calibration, Slot } from '../games/types';
 import {
+  WARMUP_ARMS_OUT_S,
   WARMUP_DEFAULT_CALIBRATION_TABLE,
   WARMUP_FALLBACK_BODY_LENGTH_IMAGE_RATIO,
   WARMUP_MOVE_GAP_S,
   WARMUP_MOVE_S,
+  WARMUP_REACH_UP_S,
+  WARMUP_RUN_IN_PLACE_S,
+  WARMUP_STAND_TALL_S,
+  WARMUP_STATUE_S,
 } from './config.ts';
 import type { PreparedPose } from './frame-prep.ts';
 import {
@@ -27,6 +32,8 @@ export type WarmupMoveId = 'stand' | 'statue' | 'reach' | 'arms' | 'squat' | 'ho
 interface MoveSpec {
   id: WarmupMoveId;
   lineId: string;
+  /** DESIGN per-move window; squat/hop use the generic rep window. */
+  durationS: number;
   /** Measure the window; returns null on fail, else the fields to merge. */
   measure(frames: MeasuredFrame[]): Partial<Calibration> | null;
 }
@@ -35,6 +42,7 @@ export const WARMUP_MOVES: readonly MoveSpec[] = [
   {
     id: 'stand',
     lineId: 'warmup.stand',
+    durationS: WARMUP_STAND_TALL_S,
     measure: (f) => {
       const m = measureStanding(f);
       return m.ok
@@ -45,6 +53,7 @@ export const WARMUP_MOVES: readonly MoveSpec[] = [
   {
     id: 'statue',
     lineId: 'warmup.statue',
+    durationS: WARMUP_STATUE_S,
     measure: (f) => {
       const m = measureStatueWobble(f);
       return m.ok ? { statueWobbleBlPerS: m.statueWobbleBlPerS } : null;
@@ -53,6 +62,7 @@ export const WARMUP_MOVES: readonly MoveSpec[] = [
   {
     id: 'reach',
     lineId: 'warmup.reach',
+    durationS: WARMUP_REACH_UP_S,
     measure: (f) => {
       const m = measureReach(f);
       return m.ok ? { reachHeightBl: m.reachHeightBl } : null;
@@ -61,6 +71,7 @@ export const WARMUP_MOVES: readonly MoveSpec[] = [
   {
     id: 'arms',
     lineId: 'warmup.arms',
+    durationS: WARMUP_ARMS_OUT_S,
     measure: (f) => {
       const m = measureArmSpan(f);
       return m.ok ? { armSpanBl: m.armSpanBl } : null;
@@ -69,6 +80,7 @@ export const WARMUP_MOVES: readonly MoveSpec[] = [
   {
     id: 'squat',
     lineId: 'warmup.squat',
+    durationS: WARMUP_MOVE_S,
     measure: (f) => {
       const m = measureSquatDepth(f);
       return m.ok ? { squatDepthRatio: m.squatDepthRatio } : null;
@@ -77,6 +89,7 @@ export const WARMUP_MOVES: readonly MoveSpec[] = [
   {
     id: 'hop',
     lineId: 'warmup.hop',
+    durationS: WARMUP_MOVE_S,
     measure: (f) => {
       const m = measureHops(f);
       return m.ok ? { hopHeightBl: m.hopHeightBl } : null;
@@ -85,6 +98,7 @@ export const WARMUP_MOVES: readonly MoveSpec[] = [
   {
     id: 'run',
     lineId: 'warmup.run',
+    durationS: WARMUP_RUN_IN_PLACE_S,
     measure: (f) => {
       const m = measureStepRate(f);
       return m.ok ? { stepRatePerS: m.stepRatePerS } : null;
@@ -153,7 +167,7 @@ export class WarmupFlow {
       this.out.push({ type: 'say', lineId: move.lineId });
       this.out.push({ type: 'move', move: move.id, phase: 'prompt' });
       this.phase = 'measure';
-      this.phaseEndS = atS + WARMUP_MOVE_GAP_S + WARMUP_MOVE_S;
+      this.phaseEndS = atS + WARMUP_MOVE_GAP_S + move.durationS;
       for (const slot of this.cfg.slots) this.frames[slot] = [];
       this.out.push({ type: 'move', move: move.id, phase: 'measure' });
       return;

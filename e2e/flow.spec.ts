@@ -7,8 +7,9 @@ import { expect, test } from '@playwright/test';
 test('keyboard flow: round, replay, time-up, cool-down, goodbye, parent gate', async ({ page }) => {
   test.setTimeout(180_000);
   // Deterministic timeline (rng=0): round = 1 s intro + 4 s dance + 3 s stop
-  // = ~8 s. Session 10 s -> round 1 fits, round 2 crosses time-up.
-  await page.goto('/?play=1&input=keyboard&freezes=1&intro=1&sessionS=10&cooldownS=2&rng=0');
+  // = ~8 s. Session 14 s -> round 1 + the replay press fit even under
+  // parallel-worker contention; round 2 (~11.5-19.5 s) crosses time-up.
+  await page.goto('/?play=1&input=keyboard&freezes=1&intro=1&sessionS=14&cooldownS=2&rng=0');
 
   await page.getByTestId('pick-2').click();
   await page.waitForSelector('canvas', { timeout: 30_000 });

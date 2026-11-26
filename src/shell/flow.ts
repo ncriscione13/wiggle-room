@@ -7,7 +7,11 @@
 import Phaser from 'phaser';
 import { createAudioBus } from '../audio/bus';
 import type { Calibration, GameContext, PlayerInfo, RoundResult, Slot } from '../games/types';
-import { COOLDOWN_STRETCH_S, STILL_LINE_FROM_WOBBLE_COEFF } from '../motion/config';
+import {
+  COOLDOWN_STRETCH_S,
+  SOLO_START_AFTER_EMPTY_S,
+  STILL_LINE_FROM_WOBBLE_COEFF,
+} from '../motion/config';
 import { KeyboardMotion } from '../motion/keyboard';
 import type { MotionSource } from '../motion/kit';
 import { StartupChecker, STARTUP_VOICE_LINES } from '../motion/startup-check';
@@ -29,6 +33,7 @@ import {
 import { defaultCalibration, loadProfiles, saveProfiles, type Profile } from './profiles';
 import { SessionTimer } from './session';
 import { loadSettings, saveSettings, type ParentSettings } from './settings';
+import { runTimingCheck } from './timing-screen';
 
 export const STAGE_W = 1280;
 export const STAGE_H = 720;
@@ -57,6 +62,7 @@ function settingsOverlay(
   root: HTMLElement,
   settings: ParentSettings,
   apply: (s: ParentSettings) => void,
+  timingCheck: ((onStatus: (text: string) => void) => Promise<unknown>) | null,
 ): void {
   if (root.querySelector('[data-testid="settings"]') !== null) return;
   const el = document.createElement('div');
@@ -107,6 +113,24 @@ function settingsOverlay(
   };
   const music = slider('Music', settings.musicVol01, 'settings-music');
   const voiceVol = slider('Voice', settings.voiceVol01, 'settings-voice');
+
+  if (timingCheck !== null) {
+    const row = document.createElement('div');
+    const button = document.createElement('button');
+    button.textContent = 'Run the clap check (15 s)';
+    button.dataset['testid'] = 'settings-timing';
+    button.style.cssText = `font-family: ${typography.family}; font-size: ${px(typography.bodyPx)}; border-radius: 12px; padding: 8px 20px; cursor: pointer;`;
+    const status = document.createElement('p');
+    status.style.cssText = `margin: 6px 0 0; font-size: ${px(typography.bodyPx)}; color: ${cssRgb(colors.textDim)};`;
+    button.addEventListener('click', () => {
+      button.disabled = true;
+      void timingCheck((text) => (status.textContent = text)).finally(() => {
+        button.disabled = false;
+      });
+    });
+    row.append(button, status);
+    el.append(row);
+  }
 
   const close = document.createElement('button');
   close.textContent = 'Done';
@@ -170,7 +194,14 @@ export async function bootPlay(root: HTMLElement): Promise<void> {
   };
   applySettings(settings);
   const gate = new HoldKeyGate(window, nowS, () => {
-    settingsOverlay(root, settings, applySettings);
+    // The clap check needs the live camera; desk mode has no real latency.
+    const lm = liveMotion;
+    const timingCheck =
+      lm !== null
+        ? (onStatus: (text: string) => void): Promise<unknown> =>
+            runTimingCheck(lm, audio, onStatus)
+        : null;
+    settingsOverlay(root, settings, applySettings, timingCheck);
   });
   const gateTimer = window.setInterval(() => {
     gate.tick();
@@ -196,28 +227,67 @@ export async function bootPlay(root: HTMLElement): Promise<void> {
   }
 
   // --- Start-up check (live only; DESIGN: 1 s head-to-ankles) -----------------
+  // A solo kid may stand in EITHER circle (whichever goes green is theirs);
+  // with two picked, a circle empty for SOLO_START_AFTER_EMPTY_S while the
+  // other kid is ready starts the game solo (DESIGN "App shell").
+  let activeSlots: Slot[] = count === 2 ? [0, 1] : [0];
   if (liveMotion !== null) {
     const lm = liveMotion;
-    const players = profiles.map((p, i) => toPlayerInfo(p, i as Slot));
-    const screen = checkScreen(root, players);
-    const checkers = new Map<Slot, StartupChecker>(
-      players.map((p) => [p.slot, new StartupChecker()]),
+    const watchSlots: Slot[] = [0, 1]; // a solo kid may be in either half
+    const fallback: Profile = {
+      id: 'slot-0',
+      color: playerColors[0],
+      mode: 'little',
+      calibration: null,
+    };
+    const screenPlayers = watchSlots.map((slot) =>
+      toPlayerInfo(profiles[Math.min(slot, profiles.length - 1)] ?? profiles[0] ?? fallback, slot),
     );
-    await new Promise<void>((resolve) => {
+    const screen = checkScreen(root, screenPlayers);
+    const checkers = new Map<Slot, StartupChecker>(
+      watchSlots.map((slot) => [slot, new StartupChecker()]),
+    );
+    const readySinceS = new Map<Slot, number>();
+    activeSlots = await new Promise<Slot[]>((resolve) => {
       const offTap = lm.onFrame((tS, frame, luma) => {
-        let allReady = true;
         for (const [slot, checker] of checkers) {
-          const view = frame.players[slot];
-          const status = checker.update(tS, view, luma);
+          const status = checker.update(tS, frame.players[slot], luma);
           screen.setStatus(slot, status.problem, status.progress01);
-          if (status.problem !== null) {
+          if (status.ready) readySinceS.set(slot, readySinceS.get(slot) ?? tS);
+          else readySinceS.delete(slot);
+          // Help lines only for circles we are still waiting on.
+          if (
+            status.problem !== null &&
+            status.problem !== 'not-seen' // an empty spare circle is fine
+          ) {
             voice.say(STARTUP_VOICE_LINES[status.problem], { player: slot });
           }
-          if (!status.ready) allReady = false;
         }
-        if (allReady) {
+        const ready = [...readySinceS.keys()].sort();
+        if (count === 1 && ready.length >= 1) {
           offTap();
-          resolve();
+          resolve(ready.slice(0, 1));
+          return;
+        }
+        if (count === 2) {
+          if (ready.length === 2) {
+            offTap();
+            resolve([0, 1]);
+            return;
+          }
+          const first = ready[0];
+          const firstSince = first !== undefined ? readySinceS.get(first) : undefined;
+          if (first !== undefined && firstSince !== undefined) {
+            if (tS - firstSince >= SOLO_START_AFTER_EMPTY_S) {
+              // The other circle stayed empty: start solo rather than hang.
+              offTap();
+              resolve([first]);
+              return;
+            }
+            // Ask the missing kid in, with the circle that is waiting.
+            const missing: Slot = first === 0 ? 1 : 0;
+            voice.say(STARTUP_VOICE_LINES['not-seen'], { player: missing });
+          }
         }
       });
     });
@@ -226,12 +296,22 @@ export async function bootPlay(root: HTMLElement): Promise<void> {
   }
 
   // --- Warm-up for kids without calibration (live only) -----------------------
+  // Profile i follows active slot i (a solo kid may occupy slot 1).
+  const fallbackProfile: Profile = {
+    id: 'slot-0',
+    color: playerColors[0],
+    mode: 'little',
+    calibration: null,
+  };
+  const profileForSlot = (slot: Slot): Profile =>
+    profiles[activeSlots.indexOf(slot)] ?? profiles[0] ?? fallbackProfile;
+
   if (liveMotion !== null && profiles.some((p) => p.calibration === null)) {
     const lm = liveMotion;
-    const slots = profiles.map((_, i) => i as Slot);
+    const slots = activeSlots;
     const flow = new WarmupFlow({
       slots,
-      modes: [profiles[0]?.mode ?? 'little', profiles[1]?.mode ?? 'little'],
+      modes: [profileForSlot(0).mode, profileForSlot(1).mode],
     });
     const screen = warmupScreen(root);
     const calibrations = await new Promise<(Calibration | null)[]>((resolve) => {
@@ -251,9 +331,9 @@ export async function bootPlay(root: HTMLElement): Promise<void> {
       });
     });
     screen.destroy();
-    for (const [i, calibration] of calibrations.entries()) {
-      const profile = profiles[i];
-      if (profile !== undefined && calibration !== null && profile.calibration === null) {
+    for (const [slotIndex, calibration] of calibrations.entries()) {
+      const profile = profileForSlot(slotIndex as Slot);
+      if (calibration !== null && profile.calibration === null) {
         profile.calibration = calibration;
       }
     }
@@ -262,11 +342,12 @@ export async function bootPlay(root: HTMLElement): Promise<void> {
 
   // Per-kid still lines from calibration (live input only).
   if (liveMotion !== null) {
-    for (const [i, p] of profiles.entries()) {
-      if (p.calibration !== null) {
+    for (const slot of activeSlots) {
+      const calibration = profileForSlot(slot).calibration;
+      if (calibration !== null) {
         liveMotion.setStillLine(
-          i as Slot,
-          p.calibration.statueWobbleBlPerS * STILL_LINE_FROM_WOBBLE_COEFF,
+          slot,
+          calibration.statueWobbleBlPerS * STILL_LINE_FROM_WOBBLE_COEFF,
         );
       }
     }
@@ -283,15 +364,18 @@ export async function bootPlay(root: HTMLElement): Promise<void> {
     }
   }, 500);
 
-  const players = profiles.map((p, i) => toPlayerInfo(p, i as Slot));
+  const players = activeSlots.map((slot) => toPlayerInfo(profileForSlot(slot), slot));
   let round = 1;
   for (;;) {
     const result = await playRound(root, players, motion, voice, audio, round);
     if (result === null) break; // scene failed to load
     if (sessionTimer.timeUp) break;
     const removeResults = resultsScreen(root, result, players);
-    await waitForArmsUp(motion);
+    voice.say('replay.arms-up'); // Little kids can't read the hint
+    // Kids may walk away mid-results: the session timer still ends the day.
+    const replay = await waitForArmsUp(motion, () => sessionTimer.timeUp);
     removeResults();
+    if (!replay) break;
     round += 1;
   }
 
@@ -321,11 +405,20 @@ function toPlayerInfo(profile: Profile, slot: Slot): PlayerInfo {
   };
 }
 
-function waitForArmsUp(motion: MotionSource): Promise<void> {
+/** Resolves true on arms-up, false when `giveUp` turns true first. */
+function waitForArmsUp(motion: MotionSource, giveUp: () => boolean): Promise<boolean> {
   return new Promise((resolve) => {
+    const timer = window.setInterval(() => {
+      if (giveUp()) {
+        window.clearInterval(timer);
+        off();
+        resolve(false);
+      }
+    }, 500);
     const off = motion.on('armsUp', () => {
+      window.clearInterval(timer);
       off();
-      resolve();
+      resolve(true);
     });
   });
 }

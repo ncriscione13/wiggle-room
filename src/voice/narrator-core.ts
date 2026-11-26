@@ -65,12 +65,16 @@ export class NarratorCore {
   }
 
   say(lineId: string, options: { player?: Slot; eventTS?: number } = {}): void {
-    if (!this.lines.has(lineId)) return; // unknown ids never crash a game
+    const line = this.lines.get(lineId);
+    if (line === undefined) return; // unknown ids never crash a game
     this.seq += 1;
+    // Praise is about a MOMENT: without an explicit event time, the moment
+    // is "now" -- so praise stuck behind other clips for >1 s still drops.
+    const eventTS = options.eventTS ?? (line.priority === 4 ? this.opts.now() : undefined);
     this.queue.push({
       lineId,
       ...(options.player !== undefined ? { player: options.player } : {}),
-      ...(options.eventTS !== undefined ? { eventTS: options.eventTS } : {}),
+      ...(eventTS !== undefined ? { eventTS } : {}),
       enqueuedAtS: this.opts.now(),
       seq: this.seq,
     });
@@ -105,21 +109,25 @@ export class NarratorCore {
         continue;
       }
       // Cooldown (help lines): suppressed repeats are dropped, not delayed.
-      const lastAt = this.lastPlayedAtS.get(head.lineId);
+      // Keyed per (line, player) so one kid's help never mutes the other's.
+      const cooldownKey = `${head.lineId}|${String(head.player ?? '')}`;
+      const lastAt = this.lastPlayedAtS.get(cooldownKey);
       if (line.cooldownS > 0 && lastAt !== undefined && now - lastAt < line.cooldownS) {
         this.remove(head);
         continue;
       }
 
-      // Mid-playback: only a safety line may preempt a lower-priority clip.
+      // Mid-playback: safety AND timing lines preempt strictly lower
+      // priorities ("Freeze!" never waits out an instruction clip); nothing
+      // ever interrupts its own level or higher.
       let interrupt = false;
       if (this.playingPriority !== null) {
-        if (line.priority === 1 && this.playingPriority > 1) interrupt = true;
+        if (line.priority <= 2 && this.playingPriority > line.priority) interrupt = true;
         else return null;
       }
 
       this.remove(head);
-      this.lastPlayedAtS.set(head.lineId, now);
+      this.lastPlayedAtS.set(cooldownKey, now);
       const wordingIdx = this.rotate(head.lineId, line.wordings.length);
       const wording = line.wordings[wordingIdx];
       if (wording === undefined) continue;

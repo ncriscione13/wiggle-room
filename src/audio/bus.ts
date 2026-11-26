@@ -15,6 +15,8 @@ interface AudioManifest {
 export interface AudioBusHandle extends AudioBus {
   /** Wire to narrator.onSpeaking for ducking. */
   setDucked(ducked: boolean): void;
+  /** Sample-accurate one-shot on the audio clock (timing check drums). */
+  scheduleSfx(id: string, atS: number): void;
   setMusicVolume(volume01: number): void;
   setSfxVolume(volume01: number): void;
   /** Call from a user gesture; resumes a suspended context. */
@@ -90,6 +92,15 @@ export async function createAudioBus(): Promise<AudioBusHandle> {
       source.buffer = buffer;
       source.connect(sfxGain);
       source.start();
+    },
+    scheduleSfx(id: string, atS: number): void {
+      const def = manifest.sfx[id];
+      const buffer = def !== undefined ? buffers.get(def.file) : undefined;
+      if (buffer === undefined) return;
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(sfxGain);
+      source.start(Math.max(atS, ctx.currentTime));
     },
     setDucked(ducked: boolean): void {
       const at = ctx.currentTime;

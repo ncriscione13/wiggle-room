@@ -125,4 +125,33 @@ describe('NarratorCore (M1.6)', () => {
     core.say('nope.missing');
     expect(core.next()).toBeNull();
   });
+
+  it('a timing line preempts an instruction clip (but never praise over timing)', () => {
+    const { core } = makeCore();
+    core.say('instr.line');
+    expect(core.next()?.lineId).toBe('instr.line');
+    core.say('timing.go');
+    const preempt = core.next();
+    expect(preempt?.lineId).toBe('timing.go');
+    expect(preempt?.interrupt).toBe(true);
+    // While timing plays, another timing line waits (no self-level preempt).
+    core.say('timing.go');
+    expect(core.next()).toBeNull();
+  });
+
+  it('praise with no explicit event time still drops once it is stale', () => {
+    const { core, setNow } = makeCore();
+    core.say('praise.line'); // no eventTS: the moment is "now" (t=0)
+    setNow(1.5); // stuck behind other audio for 1.5 s
+    expect(core.next()).toBeNull();
+  });
+
+  it('help cooldowns are per player: one kid never mutes the other', () => {
+    const { core } = makeCore();
+    core.say('help.line', { player: 0 });
+    expect(core.next()?.pan).toBeLessThan(0);
+    core.onPlaybackEnd();
+    core.say('help.line', { player: 1 }); // same id, other kid, inside 8 s
+    expect(core.next()?.pan).toBeGreaterThan(0);
+  });
 });

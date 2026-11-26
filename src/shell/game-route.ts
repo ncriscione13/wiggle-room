@@ -119,6 +119,7 @@ export async function bootGame(root: HTMLElement, gameId: string): Promise<void>
     difficulty: () => 1,
     finish: (result) => {
       renderResults(root, result, players);
+      voice.say('replay.arms-up'); // Little kids can't read the hint
       const off = motion.on('armsUp', () => {
         off();
         window.location.reload();

@@ -5,6 +5,19 @@
 // The guided visuals mount with the shell flow (M1.10).
 
 import { POSE } from '../tracking/clip-format.ts';
+import {
+  WARMUP_HOP_RISE_HI_BL,
+  WARMUP_HOP_RISE_LO_BL,
+  WARMUP_KNEE_STAND_BELOW_HIP_BL,
+  WARMUP_MIN_STAND_FRAMES_COUNT,
+  WARMUP_MIN_STEPS_COUNT,
+  WARMUP_MIN_WOBBLE_SAMPLES_COUNT,
+  WARMUP_PLAUSIBLE_REACH_MIN_BL,
+  WARMUP_PLAUSIBLE_SPAN_MIN_BL,
+  WARMUP_PLAUSIBLE_SQUAT_MAX_RATIO,
+  WARMUP_STEP_KNEE_LIFT_HI_BL,
+  WARMUP_STEP_KNEE_LIFT_LO_BL,
+} from './config.ts';
 import { Hysteresis } from './hysteresis.ts';
 import { OneEuroPoint } from './one-euro.ts';
 import type { PreparedPose } from './frame-prep.ts';
@@ -42,7 +55,7 @@ export function measureStanding(frames: MeasuredFrame[]): {
     hips.push((ankles - pose.hipMid.y) / pose.bodyLengthImage);
   }
   return {
-    ok: bls.length >= 10,
+    ok: bls.length >= WARMUP_MIN_STAND_FRAMES_COUNT,
     bodyLengthImage: median(bls),
     standingHipHeightBl: median(hips),
   };
@@ -77,7 +90,10 @@ export function measureStatueWobble(frames: MeasuredFrame[]): {
       prevPts.set(idx, s);
     }
   }
-  return { ok: speeds.length >= 20, statueWobbleBlPerS: median(speeds) };
+  return {
+    ok: speeds.length >= WARMUP_MIN_WOBBLE_SAMPLES_COUNT,
+    statueWobbleBlPerS: median(speeds),
+  };
 }
 
 /** Reach up: highest wrist above the hips, in BL. */
@@ -90,7 +106,7 @@ export function measureReach(frames: MeasuredFrame[]): { ok: boolean; reachHeigh
       best = Math.max(best, -w.yBl); // yBl is negative above the hips
     }
   }
-  return { ok: best > 1.2, reachHeightBl: best };
+  return { ok: best > WARMUP_PLAUSIBLE_REACH_MIN_BL, reachHeightBl: best };
 }
 
 /** Airplane: widest wrist-to-wrist span, in BL. */
@@ -102,7 +118,7 @@ export function measureArmSpan(frames: MeasuredFrame[]): { ok: boolean; armSpanB
     if (lw === undefined || rw === undefined || !lw.ok || !rw.ok) continue;
     best = Math.max(best, Math.abs(lw.xBl - rw.xBl));
   }
-  return { ok: best > 1.2, armSpanBl: best };
+  return { ok: best > WARMUP_PLAUSIBLE_SPAN_MIN_BL, armSpanBl: best };
 }
 
 /** Frog squats: the deepest hip height as a ratio of standing hip height. */
@@ -121,7 +137,7 @@ export function measureSquatDepth(frames: MeasuredFrame[]): {
   const deepest = Math.min(...heights);
   const ratio = deepest / standing;
   // Plausible squat: hips actually dropped meaningfully below standing.
-  return { ok: ratio < 0.85, squatDepthRatio: ratio };
+  return { ok: ratio < WARMUP_PLAUSIBLE_SQUAT_MAX_RATIO, squatDepthRatio: ratio };
 }
 
 /** Bunny hops: the biggest hip rise above baseline, in BL. */
@@ -131,7 +147,7 @@ export function measureHops(frames: MeasuredFrame[]): { ok: boolean; hopHeightBl
   const baseline = median(hipYs);
   const rises = hipYs.map((y) => baseline - y); // y down: rise = baseline - y
   // Count distinct hops with hysteresis so noise can't fake one.
-  const gate = new Hysteresis(0.15, 0.05);
+  const gate = new Hysteresis(WARMUP_HOP_RISE_HI_BL, WARMUP_HOP_RISE_LO_BL);
   let hops = 0;
   let wasUp = false;
   for (const r of rises) {
@@ -152,20 +168,20 @@ export function measureStepRate(frames: MeasuredFrame[]): { ok: boolean; stepRat
   }
   let steps = 0;
   for (const kneeIdx of [POSE.leftKnee, POSE.rightKnee]) {
-    const gate = new Hysteresis(0.25, 0.1);
+    const gate = new Hysteresis(WARMUP_STEP_KNEE_LIFT_HI_BL, WARMUP_STEP_KNEE_LIFT_LO_BL);
     let wasUp = false;
     for (const { pose } of frames) {
       const knee = pose.points[kneeIdx];
       if (knee === undefined || !knee.ok) continue;
       // Lift = how far the knee rose above its standing spot (~0.8 BL below hips).
-      const lift = 0.8 - knee.yBl;
+      const lift = WARMUP_KNEE_STAND_BELOW_HIP_BL - knee.yBl;
       const up = gate.update(lift);
       if (up && !wasUp) steps += 1;
       wasUp = up;
     }
   }
   const stepRatePerS = steps / (last.tS - first.tS);
-  return { ok: steps >= 4, stepRatePerS };
+  return { ok: steps >= WARMUP_MIN_STEPS_COUNT, stepRatePerS };
 }
 
 // --- The plan: try -> try -> slow demo -> age default -----------------------

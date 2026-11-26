@@ -33,6 +33,7 @@
     "src/motion",
     "src/voice/lines-csv.ts",
     "src/voice/narrator-core.ts",
-    "src/games/types.ts"
+    "src/games/types.ts",
+    "src/games/freeze/core.ts"
   ]
 }

@@ -23,6 +23,10 @@ export interface MotionSource {
   on(name: MotionEventName, handler: MotionEventHandler): () => void;
   pose(slot: Slot): BuddyPose | null;
   tracking(slot: Slot): TrackingState;
+  /** The motion clock: the same timebase every event's tS lives on. Game
+   * logic MUST tick on this, never on performance.now() -- live sources
+   * zero-base their clocks, so the two drift apart by whole minutes. */
+  nowS(): number;
 }
 
 const SLOTS: readonly Slot[] = [0, 1];
@@ -52,7 +56,9 @@ export class MotionKit implements MotionSource {
 
       const result = this.detectors[slot]?.update(view.pose, tS);
       if (result?.changed === true) {
-        this.emit({ name: result.moving ? 'moving' : 'still', slot, tS });
+        // Backdated to when the move actually began (rule 4): the still
+        // confirm hold never eats into a kid's grace window.
+        this.emit({ name: result.moving ? 'moving' : 'still', slot, tS: result.stateSinceS });
       }
 
       // armsUp: both wrists clearly above the head line, rising edge only.
@@ -86,6 +92,10 @@ export class MotionKit implements MotionSource {
 
   pose(slot: Slot): BuddyPose | null {
     return this.samplers[slot]?.sample(this.now()) ?? null;
+  }
+
+  nowS(): number {
+    return this.now();
   }
 
   tracking(slot: Slot): TrackingState {

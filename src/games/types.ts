@@ -93,6 +93,9 @@ export interface MotionEvents {
   /** Latest drawable pose for a slot, or null while that kid is unseen. */
   pose(slot: Slot): BuddyPose | null;
   tracking(slot: Slot): TrackingState;
+  /** The motion clock every event tS lives on. Games tick their rules with
+   * this, never with performance.now() (live sources zero-base time). */
+  nowS(): number;
 }
 
 export interface SayOptions {

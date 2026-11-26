@@ -33,6 +33,11 @@ export interface MovingStillResult {
   changed: boolean;
   /** Current smoothed motion energy, BL/s. */
   energyBlPerS: number;
+  /** When the new state actually BEGAN (confirmation is delayed; the event
+   * belongs at the start of the move -- CLAUDE.md rule 4. A kid's freeze
+   * reaction is measured from here, so the 0.5 s confirm hold never counts
+   * against them). Only meaningful when `changed`. */
+  stateSinceS: number;
 }
 
 export class MovingStillDetector {
@@ -59,7 +64,13 @@ export class MovingStillDetector {
     let speedCount = 0;
     for (const idx of CORE_POINTS) {
       const p = pose.points[idx];
-      if (p === undefined || !p.ok) continue;
+      if (p === undefined || !p.ok) {
+        // A point that vanished re-enters cleanly: its first frame back
+        // contributes no speed (benefit of the doubt on reappearance).
+        this.prevSmoothed.delete(idx);
+        this.filters.delete(idx);
+        continue;
+      }
       let filter = this.filters.get(idx);
       if (filter === undefined) {
         filter = new OneEuroPoint();
@@ -77,12 +88,14 @@ export class MovingStillDetector {
     const energyBlPerS = speedCount > 0 ? speedSum / speedCount : 0;
 
     let changed = false;
+    let stateSinceS = tS;
     if (!this.moving) {
       if (energyBlPerS > this.hiBlPerS) {
         this.aboveSinceS ??= tS;
         if (tS - this.aboveSinceS >= MOVING_CONFIRM_S) {
           this.moving = true;
           changed = true;
+          stateSinceS = this.aboveSinceS;
           this.belowSinceS = null;
         }
       } else {
@@ -94,6 +107,7 @@ export class MovingStillDetector {
         if (tS - this.belowSinceS >= STILL_MOVING_HOLD_S) {
           this.moving = false;
           changed = true;
+          stateSinceS = this.belowSinceS;
           this.aboveSinceS = null;
         }
       } else {
@@ -101,6 +115,6 @@ export class MovingStillDetector {
       }
     }
 
-    return { moving: this.moving, changed, energyBlPerS };
+    return { moving: this.moving, changed, energyBlPerS, stateSinceS };
   }
 }
