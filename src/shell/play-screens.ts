@@ -8,7 +8,15 @@ import type { StartupProblem } from '../motion/startup-check';
 import type { WarmupMoveId } from '../motion/warmup-flow';
 import { paintCheckStage, type CheckSlotView, type RenderCtx2D } from '../ui/check-stage';
 import { AdaptiveFloorCircle } from '../ui/floor-circles';
-import { colors, cssRgb, px, typography } from '../ui/theme';
+import {
+  colors,
+  cssRgb,
+  cssRgba,
+  playerColors,
+  px,
+  typography,
+  type ColorToken,
+} from '../ui/theme';
 
 /** The camera frame shape, so the stage canvas can match its aspect (phone
  * play round 1: a fixed 16:9 canvas distorted portrait/4:3 pictures). */
@@ -17,23 +25,93 @@ export interface CameraShape {
   heightPx: number;
 }
 
+/** The shared night-sky backdrop every shell screen sits on. */
+const SCREEN_BG = `radial-gradient(120% 90% at 50% 12%, ${cssRgb(colors.surfaceRaised)} 0%, ${cssRgb(
+  colors.surfaceNight,
+)} 55%, ${cssRgb(colors.surfaceDeep)} 100%)`;
+
 const BASE_STYLE = `
   position: absolute; inset: 0; display: grid; place-content: center;
   gap: 20px; text-align: center; z-index: 25;
-  background: ${cssRgb(colors.surfaceNight)};
+  background: ${SCREEN_BG};
   color: ${cssRgb(colors.textSoft)};
   font-family: ${typography.family};
+  overflow: hidden;
 `;
 
-const BUTTON_STYLE = `
-  font-family: ${typography.family}; font-size: ${px(typography.subtitlePx)};
-  color: ${cssRgb(colors.surfaceNight)}; background: ${cssRgb(colors.mint)};
-  border: none; border-radius: 24px; padding: 18px 42px; cursor: pointer;
-`;
+/** One stylesheet for the whole shell (playtest round 5 polish): screen
+ * fade-ins, floating backdrop blobs, springy buttons, star pops. Everything
+ * honors prefers-reduced-motion and nothing flashes. */
+let shellStylesMounted = false;
+function ensureShellStyles(): void {
+  if (shellStylesMounted) return;
+  shellStylesMounted = true;
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes wrFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    @keyframes wrFloatSoft { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-16px); } }
+    @keyframes wrPop { 0% { transform: scale(0.3); opacity: 0; } 70% { transform: scale(1.15); } 100% { transform: scale(1); opacity: 1; } }
+    .wr-screen { animation: wrFadeIn 420ms ease-out both; }
+    .wr-blob {
+      position: absolute; border-radius: 50%; pointer-events: none;
+      filter: blur(3px); animation: wrFloatSoft 8s ease-in-out infinite;
+    }
+    .wr-btn {
+      font-family: ${typography.family}; font-size: ${px(typography.subtitlePx)};
+      font-weight: 700; color: ${cssRgb(colors.surfaceDeep)};
+      background: linear-gradient(180deg, ${cssRgb(colors.ice)} 0%, ${cssRgb(colors.mint)} 100%);
+      border: none; border-radius: 999px; padding: 18px 44px; cursor: pointer;
+      box-shadow: 0 10px 28px ${cssRgba(colors.surfaceDeep, 0.55)}, inset 0 2px 0 ${cssRgba(colors.surfaceSnow, 0.55)};
+      transition: transform 140ms ease, box-shadow 140ms ease;
+    }
+    .wr-btn:hover { transform: translateY(-2px) scale(1.03); }
+    .wr-btn:active { transform: scale(0.96); }
+    .wr-face { position: relative; border-radius: 50%; margin: 0 auto; }
+    .wr-face::before, .wr-face::after {
+      content: ''; position: absolute; top: 34%; width: 12%; height: 12%;
+      border-radius: 50%; background: ${cssRgb(colors.surfaceDeep)};
+    }
+    .wr-face::before { left: 26%; }
+    .wr-face::after { right: 26%; }
+    .wr-smile {
+      position: absolute; left: 32%; right: 32%; top: 48%; height: 22%;
+      border: 3px solid ${cssRgb(colors.surfaceDeep)}; border-top: none;
+      border-left-color: transparent; border-right-color: transparent;
+      border-radius: 0 0 100px 100px;
+    }
+    .wr-star-pop { display: inline-block; animation: wrPop 480ms ease-out both; }
+    @media (prefers-reduced-motion: reduce) {
+      .wr-screen, .wr-blob, .wr-star-pop { animation: none; }
+      .wr-btn, .wr-btn:hover, .wr-btn:active { transition: none; transform: none; }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+/** Slow drifting color blobs behind content (never on camera screens). */
+function addBlobs(el: HTMLElement): void {
+  const specs: [ColorToken, string, string, string, string][] = [
+    ['lavender', '26vmin', '8%', '12%', '0s'],
+    ['ice', '20vmin', '74%', '18%', '-2.6s'],
+    ['peach', '16vmin', '16%', '72%', '-5.2s'],
+    ['mint', '22vmin', '70%', '70%', '-3.9s'],
+  ];
+  for (const [token, size, left, top, delay] of specs) {
+    const blob = document.createElement('div');
+    blob.className = 'wr-blob';
+    blob.style.cssText = `
+      width: ${size}; height: ${size}; left: ${left}; top: ${top};
+      background: ${cssRgba(colors[token], 0.14)}; animation-delay: ${delay};
+    `;
+    el.append(blob);
+  }
+}
 
 function screen(testid: string): HTMLDivElement {
+  ensureShellStyles();
   const el = document.createElement('div');
   el.dataset['testid'] = testid;
+  el.className = 'wr-screen';
   el.style.cssText = BASE_STYLE;
   return el;
 }
@@ -41,7 +119,10 @@ function screen(testid: string): HTMLDivElement {
 function heading(text: string): HTMLHeadingElement {
   const h = document.createElement('h2');
   h.textContent = text;
-  h.style.cssText = `font-size: ${px(typography.subtitlePx)}; margin: 0;`;
+  h.style.cssText = `
+    font-size: ${px(typography.subtitlePx + 6)}; margin: 0; font-weight: 800;
+    letter-spacing: 0.5px; text-shadow: 0 2px 18px ${cssRgba(colors.lavender, 0.35)};
+  `;
   return h;
 }
 
@@ -52,18 +133,37 @@ function note(text: string): HTMLParagraphElement {
   return p;
 }
 
+/** A little buddy face icon (pure CSS: eyes + smile), for the pick cards. */
+function buddyFace(token: ColorToken, sizePx: number): HTMLDivElement {
+  const face = document.createElement('div');
+  face.className = 'wr-face';
+  face.style.cssText = `width: ${px(sizePx)}; height: ${px(sizePx)}; background: ${cssRgb(colors[token])};`;
+  const smile = document.createElement('div');
+  smile.className = 'wr-smile';
+  face.append(smile);
+  return face;
+}
+
 /** "Who's playing?" -- the first click doubles as the audio-unlock gesture. */
 export function pickPlayers(root: HTMLElement): Promise<1 | 2> {
   return new Promise((resolve) => {
     const el = screen('pick-players');
+    addBlobs(el);
     el.append(heading("Who's playing?"));
     const row = document.createElement('div');
-    row.style.cssText = 'display: flex; gap: 24px; justify-content: center;';
+    row.style.cssText = 'display: flex; gap: 28px; justify-content: center;';
     for (const count of [1, 2] as const) {
       const button = document.createElement('button');
       button.dataset['testid'] = `pick-${String(count)}`;
-      button.textContent = count === 1 ? 'One kid' : 'Two kids';
-      button.style.cssText = BUTTON_STYLE;
+      button.className = 'wr-btn';
+      button.style.cssText = 'display: grid; gap: 12px; place-items: center; min-width: 220px;';
+      const faces = document.createElement('div');
+      faces.style.cssText = 'display: flex; gap: 10px;';
+      faces.append(buddyFace(playerColors[0], 64));
+      if (count === 2) faces.append(buddyFace(playerColors[1], 64));
+      const label = document.createElement('span');
+      label.textContent = count === 1 ? 'One kid' : 'Two kids';
+      button.append(faces, label);
       button.addEventListener('click', () => {
         el.remove();
         resolve(count);
@@ -100,12 +200,14 @@ export interface CheckScreen {
 /** Full-bleed base for the camera screens (playtest round 2: the stage must
  * fill the screen like the game does, not sit in a window). */
 function fullScreen(testid: string): HTMLDivElement {
+  ensureShellStyles();
   const el = document.createElement('div');
   el.dataset['testid'] = testid;
+  el.className = 'wr-screen';
   el.style.cssText = `
     position: absolute; inset: 0; display: flex; flex-direction: column;
     text-align: center; z-index: 25;
-    background: ${cssRgb(colors.surfaceNight)};
+    background: ${SCREEN_BG};
     color: ${cssRgb(colors.textSoft)};
     font-family: ${typography.family};
   `;
@@ -114,10 +216,12 @@ function fullScreen(testid: string): HTMLDivElement {
 
 /** A readable pill for text floating over the stage picture. */
 function overlayPill(p: HTMLParagraphElement): HTMLParagraphElement {
-  p.style.background = `${cssRgb(colors.surfaceNight)}b3`;
-  p.style.borderRadius = '14px';
+  p.style.background = cssRgba(colors.surfaceDeep, 0.72);
+  p.style.border = `1px solid ${cssRgba(colors.ice, 0.22)}`;
+  p.style.borderRadius = '999px';
   p.style.padding = '8px 22px';
   p.style.margin = '0';
+  p.style.backdropFilter = 'blur(4px)';
   return p;
 }
 
@@ -349,17 +453,30 @@ export function resultsScreen(
   players: PlayerInfo[],
 ): () => void {
   const el = screen('results');
-  el.style.background = `${cssRgb(colors.surfaceNight)}e6`;
-  el.append(heading(result.coopBonus === true ? 'Team snowstorm!' : 'Great moving!'));
+  addBlobs(el);
+  el.append(heading(result.coopBonus === true ? 'Team snowstorm! ❄' : 'Great moving!'));
   for (const per of result.perPlayer) {
     const player = players.find((p) => p.slot === per.slot);
     const line = document.createElement('p');
     line.dataset['testid'] = `stars-${String(per.slot)}`;
-    const stars = '★'.repeat(Math.min(10, per.stars)) || '·';
-    line.textContent = stars + (per.score !== undefined ? ` ${String(per.score)}` : '');
     line.style.cssText = `font-size: ${px(typography.titlePx)}; margin: 0; color: ${cssRgb(
       colors[player?.color ?? 'playerBlue'],
     )};`;
+    // Stars pop in one by one (the little ceremony IS the reward).
+    const starCount = Math.min(10, per.stars);
+    if (starCount === 0) line.textContent = '·';
+    for (let i = 0; i < starCount; i += 1) {
+      const star = document.createElement('span');
+      star.className = 'wr-star-pop';
+      star.textContent = '★';
+      star.style.animationDelay = `${String(i * 120)}ms`;
+      line.append(star);
+    }
+    if (per.score !== undefined) {
+      const score = document.createElement('span');
+      score.textContent = ` ${String(per.score)}`;
+      line.append(score);
+    }
     el.append(line);
   }
   el.append(note('Arms up to play again! (A)'));
@@ -371,6 +488,7 @@ export function resultsScreen(
 
 export function cooldownScreen(root: HTMLElement, lengthS: number): { done: Promise<void> } {
   const el = screen('cooldown');
+  addBlobs(el);
   el.append(heading('Cool-down stretch time'));
   const bar = document.createElement('div');
   bar.style.cssText = `width: 420px; height: 18px; border-radius: 9px; background: ${cssRgb(colors.surfaceRaised)}; margin: 0 auto; overflow: hidden;`;
@@ -397,7 +515,12 @@ export function cooldownScreen(root: HTMLElement, lengthS: number): { done: Prom
 
 export function goodbyeScreen(root: HTMLElement): void {
   const el = screen('goodbye');
+  addBlobs(el);
+  const faces = document.createElement('div');
+  faces.style.cssText = 'display: flex; gap: 16px; justify-content: center;';
+  faces.append(buddyFace(playerColors[0], 72), buddyFace(playerColors[1], 72));
   el.append(
+    faces,
     heading('Great moving today!'),
     note('Time for a break. A grown-up can hold P — or press and hold the top-right corner.'),
   );

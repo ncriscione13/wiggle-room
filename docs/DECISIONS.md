@@ -2,6 +2,28 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-26 — Playtest round 5 — solo never says "Pink"; shell polish pass
+
+Nick: "one player still asks for pink when it should only be blue… still very clunky
+and not visually and aesthetically appealing."
+
+- **Solo play never says "Pink":** the narrator's color-name prefixes were hard-wired
+  to SLOTS (slot 1 = "Pink…"), so a solo kid wandering into the left half — or any
+  startup problem detected there — got addressed as Pink while everything visual was
+  blue (profiles map colors correctly; the voice didn't). `NarratorCore.
+setColorLineIds([null|id, null|id])` makes prefixes swappable; the flow and the
+  desk route set `[null, null]` for one kid — color names exist to tell TWO kids
+  apart; a solo kid is just "you". Per-slot stereo pan stays (it is spatial, not a
+  name).
+- **Shell polish pass** (interim; M4 is still the real art pass): one night-sky
+  radial-gradient backdrop everywhere (new `surfaceDeep` token), screens fade in,
+  slow floating color blobs behind non-camera screens, springy pill buttons with the
+  pick cards now showing buddy FACES (CSS eyes + smile; the start screen's circles got
+  faces too), glowing headings, glassier overlay pills, results stars pop in one by
+  one, and the game got a gradient backdrop with the floor circles rendered as soft
+  glowing home spots instead of wireframe ellipses. All motion honors
+  prefers-reduced-motion; nothing flashes.
+
 ## 2026-11-26 — Playtest round 4 — stale-cache self-heal, solo circle IN-GAME, buddy faces
 
 Nick: "I don't see the changes… marshmallow men… one person still shows 2 circles on

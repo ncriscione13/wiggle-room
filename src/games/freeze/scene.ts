@@ -122,15 +122,31 @@ class FreezeScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.cameras.main.setBackgroundColor(phaserColor(colors.surfaceNight));
+    this.cameras.main.setBackgroundColor(phaserColor(colors.surfaceDeep));
+    // Night-sky backdrop: raised glow up top fading into the deep floor
+    // (playtest round 5: the flat navy read as unfinished).
+    const bg = this.add.graphics();
+    bg.fillGradientStyle(
+      phaserColor(colors.surfaceNight),
+      phaserColor(colors.surfaceNight),
+      phaserColor(colors.surfaceDeep),
+      phaserColor(colors.surfaceDeep),
+      1,
+    );
+    bg.fillRect(0, 0, STAGE_W, STAGE_H);
 
     // Floor circles: one per ACTIVE player only (solo = one circle), at the
     // same shared spot every screen uses (playtest round 4 fix -- the scene
-    // used to draw both halves' circles with its own geometry).
+    // used to draw both halves' circles with its own geometry). A soft fill
+    // under the stroke makes them read as glowing home spots, not wireframes.
     const floor = this.add.graphics();
     for (const player of this.ctx.players) {
       const c = floorCircleScreen(player.slot, FULL_VIEWPORT);
-      floor.lineStyle(6, phaserColor(colors[player.color]), 0.5);
+      floor.fillStyle(phaserColor(colors[player.color]), 0.1);
+      floor.fillEllipse(c.cx, c.cy, c.rx * 2, c.ry * 2);
+      floor.lineStyle(10, phaserColor(colors[player.color]), 0.16);
+      floor.strokeEllipse(c.cx, c.cy, c.rx * 2.12, c.ry * 2.12);
+      floor.lineStyle(5, phaserColor(colors[player.color]), 0.55);
       floor.strokeEllipse(c.cx, c.cy, c.rx * 2, c.ry * 2);
     }
 

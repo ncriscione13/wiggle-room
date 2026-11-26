@@ -53,6 +53,10 @@ const PLAYER_PAN = [-0.5, 0.5] as const;
 export class NarratorCore {
   private readonly lines: Map<string, VoiceLine>;
   private readonly opts: NarratorCoreOptions;
+  /** Per-slot color prefix line ids; null = no prefix for that slot. Solo
+   * play sets [null, null] -- color names only disambiguate TWO kids
+   * (playtest round 5: a solo kid kept hearing "Pink…"). */
+  private colorIds: readonly [string | null, string | null];
   private readonly queue: QueuedRequest[] = [];
   private readonly lastWordingIdx = new Map<string, number>();
   private readonly lastPlayedAtS = new Map<string, number>();
@@ -62,6 +66,12 @@ export class NarratorCore {
   constructor(lines: Map<string, VoiceLine>, opts: NarratorCoreOptions) {
     this.lines = lines;
     this.opts = opts;
+    this.colorIds = [opts.colorLineIds?.[0] ?? null, opts.colorLineIds?.[1] ?? null];
+  }
+
+  /** Swap the per-slot color prefixes (null = none). */
+  setColorLineIds(ids: readonly [string | null, string | null]): void {
+    this.colorIds = ids;
   }
 
   say(lineId: string, options: { player?: Slot; eventTS?: number } = {}): void {
@@ -152,7 +162,7 @@ export class NarratorCore {
       let pan = 0;
       if (head.player !== undefined) {
         pan = PLAYER_PAN[head.player];
-        const colorId = this.opts.colorLineIds?.[head.player];
+        const colorId = this.colorIds[head.player] ?? undefined;
         const colorLine = colorId !== undefined ? this.lines.get(colorId) : undefined;
         if (colorId !== undefined && colorLine !== undefined) {
           const colorIdx = this.rotate(colorId, colorLine.wordings.length);

@@ -2,10 +2,10 @@
 // arrives in M1.10. All colors come from the theme (CLAUDE.md rule 9); motion
 // is slow and eased, honoring prefers-reduced-motion (comfort rules).
 
-import { colors, playerColors, px, typography } from '../ui/theme';
+import { colors, cssRgba, playerColors, px, typography } from '../ui/theme';
 
 export function renderStartScreen(root: HTMLElement): void {
-  document.body.style.background = colors.surfaceNight;
+  document.body.style.background = `radial-gradient(120% 90% at 50% 12%, ${colors.surfaceRaised} 0%, ${colors.surfaceNight} 55%, ${colors.surfaceDeep} 100%)`;
 
   const style = document.createElement('style');
   style.textContent = `
@@ -25,11 +25,30 @@ export function renderStartScreen(root: HTMLElement): void {
       gap: ${px(48)};
       margin-bottom: ${px(12)};
     }
+    @keyframes wr-float {
+      from { transform: translateY(0); }
+      to { transform: translateY(-14px); }
+    }
     .wr-circle {
+      position: relative;
       width: ${px(72)};
       height: ${px(72)};
       border-radius: 50%;
       animation: wr-float 2.6s ease-in-out infinite alternate;
+      box-shadow: 0 10px 26px ${cssRgba(colors.surfaceDeep, 0.6)};
+    }
+    /* Little faces (eyes + smile): blobs with faces are buddies. */
+    .wr-circle::before, .wr-circle::after {
+      content: ''; position: absolute; top: 34%; width: 12%; height: 12%;
+      border-radius: 50%; background: ${colors.surfaceDeep};
+    }
+    .wr-circle::before { left: 26%; }
+    .wr-circle::after { right: 26%; }
+    .wr-circle .wr-circle-smile {
+      position: absolute; left: 32%; right: 32%; top: 48%; height: 22%;
+      border: 3px solid ${colors.surfaceDeep}; border-top: none;
+      border-left-color: transparent; border-right-color: transparent;
+      border-radius: 0 0 100px 100px;
     }
     .wr-circle[data-player='0'] {
       background: ${colors[playerColors[0]]};
@@ -72,6 +91,9 @@ export function renderStartScreen(root: HTMLElement): void {
     const circle = document.createElement('div');
     circle.className = 'wr-circle';
     circle.dataset['player'] = slot;
+    const smile = document.createElement('div');
+    smile.className = 'wr-circle-smile';
+    circle.appendChild(smile);
     circles.appendChild(circle);
   }
 
@@ -95,10 +117,12 @@ export function renderStartScreen(root: HTMLElement): void {
   play.href = '?play=1';
   play.textContent = "Let's play!";
   play.style.cssText = `
-    display: inline-block; margin-top: 18px; padding: 16px 44px;
-    border-radius: 24px; text-decoration: none;
+    display: inline-block; margin-top: 18px; padding: 18px 52px;
+    border-radius: 999px; text-decoration: none; font-weight: 700;
     font-size: ${px(typography.subtitlePx)};
-    color: ${colors.surfaceNight}; background: ${colors.mint};
+    color: ${colors.surfaceDeep};
+    background: linear-gradient(180deg, ${colors.ice} 0%, ${colors.mint} 100%);
+    box-shadow: 0 10px 28px ${cssRgba(colors.surfaceDeep, 0.55)}, inset 0 2px 0 ${cssRgba(colors.surfaceSnow, 0.55)};
   `;
 
   main.append(circles, title, subtitle, play, hint);

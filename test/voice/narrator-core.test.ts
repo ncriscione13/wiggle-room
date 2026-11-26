@@ -203,3 +203,27 @@ describe('clearPending (playtest round 2: voice must match the screen)', () => {
     expect(core.next()).toBeNull(); // exactly one prompt played, not two
   });
 });
+
+describe('setColorLineIds (playtest round 5: solo play never says "Pink")', () => {
+  it('null ids drop the color prefix but keep the line and per-slot pan', () => {
+    const { core } = makeCore();
+    core.setColorLineIds([null, null]);
+    core.say('help.line', { player: 1 });
+    const d = core.next();
+    expect(d?.urls).toHaveLength(1); // no prefix clip
+    expect(d?.caption.toLowerCase()).not.toContain('pink');
+    expect(d?.pan).toBeGreaterThan(0); // spatial pan still applies
+  });
+
+  it('restoring ids brings prefixes back (two-kid play)', () => {
+    const { core } = makeCore();
+    core.setColorLineIds([null, null]);
+    core.say('help.line', { player: 0 });
+    core.next();
+    core.onPlaybackEnd();
+    core.setColorLineIds(['color.blue', 'color.pink']);
+    core.say('help.line', { player: 1 });
+    const d = core.next();
+    expect(d?.urls).toHaveLength(2); // prefix + line
+  });
+});

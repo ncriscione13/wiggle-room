@@ -11,6 +11,8 @@
 export const colors = {
   /** Main stage background: soft night blue (also in index.html bootstrap). */
   surfaceNight: '#2b3045',
+  /** Deepest backdrop tone: gradient floors under surfaceNight. */
+  surfaceDeep: '#1f2336',
   /** Raised cards and panels on the night surface. */
   surfaceRaised: '#3a4160',
   /** Light snowy surface for daytime scenes. */

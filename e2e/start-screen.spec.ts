@@ -16,8 +16,12 @@ test('start screen shows the Wiggle Room title on the night surface', async ({ p
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Wiggle Room' })).toBeVisible();
 
-  const bodyBg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-  expect(bodyBg).toBe(cssRgb(colors.surfaceNight));
+  // Round 5 polish: the backdrop is a night-sky GRADIENT built from theme
+  // surface tokens (never a bare literal, never pure white).
+  const bodyBg = await page.evaluate(() => getComputedStyle(document.body).backgroundImage);
+  expect(bodyBg).toContain('radial-gradient');
+  expect(bodyBg).toContain(cssRgb(colors.surfaceNight).slice(3)); // "(43, 48, 69)"
+  expect(bodyBg).toContain(cssRgb(colors.surfaceDeep).slice(3));
 });
 
 test('start screen shows both player circles in their theme colors', async ({ page }) => {

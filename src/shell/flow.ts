@@ -229,6 +229,9 @@ export async function bootPlay(root: HTMLElement): Promise<void> {
   const count = await pickPlayers(root); // the click is the audio gesture
   const [voice, audio] = await Promise.all([createNarrator(), createAudioBus()]);
   await Promise.all([voice.resume(), audio.resume()]);
+  // Color-name prefixes exist to tell TWO kids apart; a solo kid is just
+  // "you" (playtest round 5: one player kept hearing "Pink…").
+  if (count === 1) voice.setColorLineIds([null, null]);
   voice.onSpeaking((speaking) => {
     audio.setDucked(speaking);
   });

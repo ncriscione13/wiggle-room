@@ -87,6 +87,8 @@ export async function bootGame(root: HTMLElement, gameId: string): Promise<void>
   const motion = new KeyboardMotion(window, nowS);
 
   const [voice, audio] = await Promise.all([createNarrator(), createAudioBus()]);
+  // Solo play: no color-name prefixes (they only disambiguate two kids).
+  if (players.length === 1) voice.setColorLineIds([null, null]);
 
   // Audio contexts start suspended until a user gesture; resume on the first.
   const resumeOnce = (): void => {
