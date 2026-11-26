@@ -260,6 +260,18 @@ export async function bootApp(root: HTMLElement): Promise<void> {
     return;
   }
 
+  // Direct game mount (M1.9): desk play + e2e. The guided flow is M1.10.
+  const gameId = new URLSearchParams(window.location.search).get('game');
+  if (gameId !== null) {
+    try {
+      const { bootGame } = await import('./game-route');
+      await bootGame(root, gameId);
+    } catch {
+      renderCameraErrorScreen(root, 'model'); // friendly "couldn't load" screen
+    }
+    return;
+  }
+
   if (isRecorderEnabled(window.location.search, import.meta.env.DEV)) {
     mountDevTools(root, {
       getSource: () => session?.source ?? null,

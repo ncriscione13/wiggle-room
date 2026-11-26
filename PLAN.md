@@ -123,7 +123,7 @@ Goal: the first complete, fun, two-player game.
   - Tests for the queue rules
 - [x] M1.7 Buddy avatar: soft blob character per kid in their color. Mirrors the pose with light smoothing and ~30 ms prediction. Reaction animations: giggle, statue, cheer, wave.
 - [x] M1.8 Timing check ("clap with the drum", 15 s): measures the full audio/visual delay, stores the offset, and applies it to game timing windows and voice cues.
-- [ ] M1.9 Freeze Dance, exactly per DESIGN.md:
+- [x] M1.9 Freeze Dance, exactly per DESIGN.md:
   - Dance meters, random stops, grace windows, Little/Big settings
   - Statue and wobble reactions
   - Snowstorm co-op bonus, pose cards in Big mode, slow-motion song every third round

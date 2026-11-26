@@ -2,6 +2,31 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-26 — M1.9 — Freeze Dance (core, scene, route, keyboard e2e)
+
+- **The game is a pure directive machine** (`FreezeCore`): the scene drains typed
+  directives (music/say/statue/wobble/star/snowstorm/pose-card/finish) per tick and only
+  draws and routes. Event timestamps may lag or lead the tick clock (worker frames), so
+  inputs queue and apply in time order.
+- **Interpretations of underspecified DESIGN lines** (all tunable in config):
+  mixed-age pairs use the steadier Little music timing; a Little kid who never stills
+  during a stop gets a giggle line and no star (never a buzzer); a wobble blip under
+  0.6 s Little / 0.3 s Big keeps the statue; snowstorm needs ≥ 2 active players, and a
+  coasting kid counts as frozen for it (benefit of the doubt extends to the team);
+  pose cards appear every 2nd stop when a Big kid plays; Big score =
+  100 − reaction·100 − wobbles·15 (min 10) + 25 card bonus; "out" rule skipped (optional
+  in DESIGN, parent-settings material).
+- **Mirror layout fact:** slot 0 binds to the image-left half, which lands on the RIGHT
+  of the mirrored screen. The scene paints buddies through one full-stage mirrored
+  viewport, so each kid lands in their half with no per-slot math.
+- **`?game=freeze&input=keyboard` route** assembles a real GameContext (keyboard motion,
+  real narrator with captions + ducking, real audio bus) — it is desk mode and the e2e
+  entry; the camera flow into games arrives with M1.10. `difficulty()` is a stub (1)
+  until games report wins (M2). Replay-on-arms-up reloads the page (flow replaces it).
+- **First Phaser use** (4.2.1): Phaser-3-style API held; `window.__wiggle` test hooks
+  expose phase/meters/stars to Playwright. Stale-`dist` trap: `vite preview` serves the
+  last build — always `npm run build` before a direct `playwright test` run.
+
 ## 2026-11-26 — M1.8 — Timing check core (clap matcher + clap detector + store)
 
 - **Greedy best-first beat↔clap matching** (smallest |delay| pairs win, each side used
