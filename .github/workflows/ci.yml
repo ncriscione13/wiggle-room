@@ -26,7 +26,11 @@ jobs:
         with:
           node-version: 24
           cache: npm
+      # kokoro-js -> onnxruntime-node postinstall tries to fetch a CUDA build
+      # on Linux runners and 404s; CPU-only is all the render tool needs.
       - run: npm ci
+        env:
+          ONNXRUNTIME_NODE_INSTALL_CUDA: skip
       - name: Cache pose model
         uses: actions/cache@v4
         with:
@@ -58,7 +62,11 @@ jobs:
         with:
           node-version: 24
           cache: npm
+      # kokoro-js -> onnxruntime-node postinstall tries to fetch a CUDA build
+      # on Linux runners and 404s; CPU-only is all the render tool needs.
       - run: npm ci
+        env:
+          ONNXRUNTIME_NODE_INSTALL_CUDA: skip
       - name: Cache pose model
         uses: actions/cache@v4
         with:
