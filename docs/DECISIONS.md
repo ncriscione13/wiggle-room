@@ -2,6 +2,38 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-26 — M1 fresh-eyes review — all findings applied
+
+- **Blocker found and fixed: two clocks.** Live pose sources zero-base their time; the
+  scene ticked FreezeCore on `performance.now()`. Every reaction measured ~0 and every
+  freeze was "within grace" on the real camera path — while keyboard tests (same clock
+  both sides) stayed green. Now `MotionEvents.nowS()` is the one game clock, the scene
+  ticks on it, and `test/motion/clock-seam.test.ts` wires kit→core exactly like the
+  scene to pin it. Lesson recorded: every module was unit-tested and the bug lived in
+  the seam none of them crossed.
+- Still/moving events **backdate to state start** (`stateSinceS`): the 0.5 s confirm
+  hold no longer eats the kid's grace (rule 4 applied to freezing, not just moving).
+- Grace now starts after `outputDelayS + MUSIC_FADE_S` (the stop must be audible).
+- **The clap check is reachable** (parent settings button): drums scheduled on the audio
+  clock are translated to the motion clock at schedule time, so the stored offset is
+  clock-skew-free and safe to persist.
+- Narrator: praise defaults its event moment to enqueue time (CLAUDE rule 10 now
+  operates); timing (priority 2) preempts instructions/praise; help cooldowns keyed per
+  (line, player). Freeze: voiced "Freeze!" Little-only per the Voice guide; all-Big
+  rounds use the fast loop; intro defaults to the pinned 10 s (the 4 s default had
+  silently weakened a design number); scene listener leak on replay fixed; snowstorm
+  earned a visible flurry; pose cards need a `fresh` pose; first star says
+  `game.first-win`; `replay.arms-up` is spoken, not just printed.
+- Flow: solo kids may stand in EITHER circle (first green circle wins); a two-kid pick
+  auto-demotes to solo after `SOLO_START_AFTER_EMPTY_S` (the pick screen itself is a
+  logged deviation from pure auto-detection); the results wait gives up at session end
+  so walked-away kids still get the cool-down; settings load is validated field by
+  field (corrupted JSON can't NaN an AudioParam).
+- Warm-up: per-move DESIGN durations wired (total ≈ 30 s again) and every extractor
+  threshold moved into config (rule 5). Bench now measures the real `MotionKit.update`
+  - per-frame buddy sampling: avg 0.0072 ms, p99 0.014 ms — unchanged verdict, honest
+    gate.
+
 ## 2026-11-26 — M1.10 — Minimal shell (flow, warm-up runner, session, gate)
 
 - **`/` keeps the debug stage; the kid flow lives at `?play=1`** behind the start

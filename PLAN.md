@@ -303,3 +303,67 @@ pinned key).
    display set to TV only at 1080p/60.
 
 **Stopped and waiting** for your results before starting Phase M0.
+
+---
+
+## Phase M1 report (2026-11-26)
+
+**All ten tasks shipped.** The motion kit is real (frame prep → player binding →
+moving/still → events behind `GameContext.motion`), Freeze Dance plays end to end
+for one or two kids, and the `?play=1` flow walks pick → start-up check → warm-up →
+game → results → arms-up replay → session timer → cool-down → goodbye behind the
+P-hold parent gate.
+
+**Numbers**
+
+- Tests: **379 unit/clip + 30 Playwright**, all green; `npm run check` green on CI
+  (one `ONNXRUNTIME_NODE_INSTALL_CUDA=skip` fix — kokoro-js's transitive postinstall
+  404'd on Linux runners).
+- Bench (now the real `MotionKit.update` + buddy sampling over the 10-min two-kid
+  clip): **avg 0.0072 ms, p99 0.014 ms, max 1.27 ms** vs 1 / 2 ms budgets.
+- Acceptance clip gates: **zero player swaps** on `two-kids-10min` (crossing arms
+  included), **zero false "moving"** on `still-30s`.
+- Assets: 99 kokoro-rendered voice clips (33 lines × 3 wordings; 21 MB wav),
+  3 synthesized CC0 music loops + 4 sfx, all committed and precached.
+
+**Fresh-eyes review** (separate agent, full phase diff): 1 blocker + 14 real
+findings, **all fixed** (see DECISIONS "M1 fresh-eyes review"). The blocker —
+game logic ticking on `performance.now()` while live events ride the zero-based
+motion clock — was invisible to every module test; a kit→core seam test now pins it.
+
+**Known gaps (deliberate, logged)**
+
+- The voiced warm-up runs on the live path only; desk/keyboard mode uses age
+  defaults (keyboard input is binary still/moving).
+- `difficulty()` is a stub (1) until games report wins/misses (M2).
+- Voice clips are wav (no ffmpeg on this machine): ~21 MB that ogg would cut to
+  ~3 MB. **Question for you:** install ffmpeg (winget install gyan.ffmpeg) or OK
+  to add `ffmpeg-static` as a devDependency? Then `npm run voice -- --force`.
+- Real-kid clips directory (`test/clips/real/`) is still empty — the zero-swap /
+  zero-false-move gates run on synthetic + your recorded clips when they exist.
+
+**What I need from you (on the TV machine, in order)**
+
+1. **Pull latest** on the TV computer, `npm ci && npm run fetch-models && npm run dev:lan`
+   (or open the deployed Pages site), then on the TV: open `/?recheck=1`, let the
+   device check run, press **D** and send me the debug line (camera/inference/render
+   numbers on THE TV machine — still unmeasured).
+2. **Play the flow for real**: `/?play=1`, pick "Two kids" (or one), walk through the
+   start-up check (try standing too close / turning a light off — do the right voice
+   lines fire at most every 8 s?), do the warm-up once, play 2–3 Freeze Dance rounds.
+   Note: does the grace feel fair in Big mode? Do wobbles giggle rather than punish?
+   Any voice line that lands late or talks over the freeze moment?
+3. **Clap check**: hold **P** 3 s → "Run the clap check" → clap along → send me the
+   saved ms number (and whether it felt in sync).
+4. **Slow-mo lag test** per `docs/LAG-TEST.md` (240 fps phone video of hand + TV,
+   count frames). Target ≤ 100 ms total.
+5. **Record real kid clips** when convenient (`/?screen=record`): the 8 takes listed
+   in `test/clips/real/README.md` — these turn the detector gates from synthetic to
+   real.
+6. **The actual playtest gate**: 2–3 short sessions with kids. The bar: they ask to
+   play again in ≥ 2 of 3 sessions, at most one "it didn't see me" per round. Tell me
+   every moment a kid looked confused or cheated — those notes tune `config.ts`, and
+   per the loop I'll tune numbers, not rewrite systems.
+
+**Stopped and waiting** for your TV numbers and playtest notes before starting
+Phase M2 (Critter Dash).
