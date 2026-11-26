@@ -321,21 +321,29 @@ export const DIFFICULTY_DOWN_AFTER_MISSES_COUNT = 2;
 
 // --- Freeze Dance (DESIGN.md "Game 1") ---------------------------------------
 
-/** Music play time between freezes. */
+/** Music play time between freezes. Playtest + research (2026-11-26): kids
+ * wanted to DANCE, and 4 s barely starts a wiggle -- classroom freeze dance
+ * runs long music with short stops for young kids (stops get more frequent
+ * only as mastery grows), and kids' movement media (GoNoodle) sustains
+ * minutes of continuous dancing. Dancing is the joy; the stop is the spice. */
 export const FREEZE_MUSIC_GAP_S: PerAgeMode<Range> = {
-  little: { min: 4, max: 8 },
-  big: { min: 3, max: 10 },
+  little: { min: 10, max: 18 },
+  big: { min: 8, max: 16 },
 };
+/** Mid-dance encouragement cadence: young players want frequent feedback,
+ * so the narrator cheers the dancing on about this often (jittered). */
+export const FREEZE_DANCE_CHEER_EVERY_S = 7;
 /** Grace window to freeze after the music stops reaching the room. */
 export const FREEZE_GRACE_S: PerAgeMode = { little: 1, big: 0.5 };
 /** How long each freeze lasts before the music returns. */
 export const FREEZE_STOP_S: Range = { min: 3, max: 5 };
-/** Freezes per ~2 minute round. */
-export const FREEZES_PER_ROUND_COUNT: Range = { min: 6, max: 8 };
+/** Freezes per ~2 minute round (fewer since the dances got longer). */
+export const FREEZES_PER_ROUND_COUNT: Range = { min: 5, max: 7 };
 /** Every third round plays the slow-motion dance song. */
 export const FREEZE_SLOWMO_ROUND_INTERVAL_COUNT = 3;
-/** Seconds of dancing that fill the dance meter. */
-export const FREEZE_METER_FILL_S = 4;
+/** Seconds of dancing that fill the dance meter (scaled with the longer
+ * dance windows so the meter stays a live goal, not an early plateau). */
+export const FREEZE_METER_FILL_S = 8;
 /** A moving blip shorter than this during a freeze is a wobble (giggle,
  * statue kept); longer loses the statue until the kid re-stills. */
 export const FREEZE_WOBBLE_FORGIVE_S: PerAgeMode = { little: 0.6, big: 0.3 };

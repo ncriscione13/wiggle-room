@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MotionKit } from '../../src/motion/kit';
 import { FreezeCore } from '../../src/games/freeze/core';
+import { FREEZE_MUSIC_GAP_S } from '../../src/motion/config';
 import { POSE, type ClipPose } from '../../src/tracking/clip-format';
 
 // M1 review blocker regression: game logic must tick on the MOTION clock
@@ -46,12 +47,14 @@ describe('motion clock -> game clock seam (M1 review blocker)', () => {
       core.onStill(e.slot, e.tS);
     });
 
-    // Big timing, rng 0: intro ends ~0.53, dance 3 s -> stop at ~3.53.
-    // The kid dances until 4.0 s, then freezes INSTANTLY and holds.
-    const stopS = 3.53;
-    const freezeAtS = 4.0;
+    // Big timing, rng 0: intro ends ~0.53, then one dance of the big gap
+    // minimum. The kid dances until ~0.47 s after the stop, then freezes
+    // INSTANTLY and holds. (Derived from config so tuning never breaks this.)
+    const stopS = Math.round((0.53 + FREEZE_MUSIC_GAP_S.big.min) * 100) / 100;
+    const freezeAtS = stopS + 0.47;
+    const simEndS = freezeAtS + 4;
     let statueAt: number | null = null;
-    for (let i = 0; i <= 30 * 8; i += 1) {
+    for (let i = 0; i <= 30 * simEndS; i += 1) {
       const tS = i / 30;
       const dancing = tS < freezeAtS;
       const wiggle = dancing ? Math.sin(i * 1.3) * 0.03 : 0;

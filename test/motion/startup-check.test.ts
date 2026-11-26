@@ -175,15 +175,19 @@ describe('StartupChecker (M1.3)', () => {
   });
 });
 
-describe('spareSlotToMute (playtest round 2: solo pick)', () => {
+describe('spareSlotToMute (solo pick shows exactly ONE circle)', () => {
   it('mutes the empty circle once the solo kid is clearly in the other one', () => {
     expect(spareSlotToMute(1, ['not-seen', null])).toBe(0);
     expect(spareSlotToMute(1, [null, 'not-seen'])).toBe(1);
     expect(spareSlotToMute(1, ['not-seen', 'too-close'])).toBe(0); // being fixed over there
   });
 
-  it('keeps both circles asking while nobody has arrived yet', () => {
-    expect(spareSlotToMute(1, ['not-seen', 'not-seen'])).toBeNull();
+  it("before anyone arrives, slot 0's circle is THE one target (round 3 fix)", () => {
+    expect(spareSlotToMute(1, ['not-seen', 'not-seen'])).toBe(1);
+  });
+
+  it('shows both only in the odd case of bodies in both halves', () => {
+    expect(spareSlotToMute(1, [null, 'crowded'])).toBeNull();
   });
 
   it('never mutes anything with two kids picked (the missing kid IS the message)', () => {

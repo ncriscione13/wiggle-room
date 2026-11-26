@@ -145,3 +145,32 @@ describe('paintCheckStage', () => {
     expect(alphaOfFirstFill(0.8)).toBeGreaterThan(alphaOfFirstFill(0));
   });
 });
+
+describe('hidden slots (solo pick: one kid gets ONE circle)', () => {
+  it('draws neither circle nor buddy for a hidden slot', () => {
+    const ctx = new RecordingCtx();
+    paintCheckStage(
+      ctx,
+      1280,
+      720,
+      new Map([
+        [0, view({ pose: pose(0.25) })],
+        [
+          1,
+          view({
+            color: 'playerPink',
+            circle: floorCircleImage(1),
+            hidden: true,
+            pose: pose(0.75),
+          }),
+        ],
+      ]),
+      0,
+    );
+    const ellipses = ctx.ops.filter((o) => o.op === 'ellipse');
+    expect(ellipses).toHaveLength(2); // fill + outline for slot 0 only
+    // Slot 1's kid stands image-right (screen-LEFT mirrored): no arcs there.
+    const arcs = ctx.ops.filter((o): o is Extract<Op, { op: 'arc' }> => o.op === 'arc');
+    for (const a of arcs) expect(a.x).toBeGreaterThan(1280 / 2);
+  });
+});

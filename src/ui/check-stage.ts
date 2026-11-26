@@ -69,6 +69,8 @@ export interface CheckSlotView {
   progress01: number;
   /** Seen head to ankles long enough: the circle turns solid green. */
   ready: boolean;
+  /** Draw nothing for this slot (solo pick: one kid gets ONE circle). */
+  hidden?: boolean;
 }
 
 /** Paints the full check view: floor circles first, buddies on top. */
@@ -83,6 +85,7 @@ export function paintCheckStage(
   const vp: BuddyViewport = { x: 0, y: 0, width: widthPx, height: heightPx, mirrored: true };
 
   for (const [, view] of views) {
+    if (view.hidden === true) continue;
     const c = circleToViewport(view.circle, vp);
     const token = view.ready ? 'meadow' : view.color;
     ctx.beginPath();
@@ -103,7 +106,7 @@ export function paintCheckStage(
 
   const buddyCanvas = buddyCanvasFor(ctx);
   for (const [, view] of views) {
-    if (view.pose === null) continue;
+    if (view.hidden === true || view.pose === null) continue;
     const reaction = view.ready
       ? ({ kind: 'wave', phase01: 0 } as const)
       : ({ kind: 'idle', phase01: 0 } as const);

@@ -2,6 +2,31 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-26 — Playtest round 3 — longer dances (researched), mid-dance cheers, solo = one circle
+
+Nick: "They need to be dancing for longer. And it needs to be more kid-friendly. Do some
+research on kid-friendly games." Research written up in `docs/KID-DESIGN.md` (classroom
+freeze-dance guidance, GoNoodle, Just Dance Kids Mode, Sesame/NN-g preschool interaction
+design, Kinect-era motion-game lessons) — each principle there names what we do about it.
+
+- **Dance windows 2.5x longer** (`FREEZE_MUSIC_GAP_S` little 4–8 → 10–18 s, big 3–10 →
+  8–16 s): classroom practice runs long music with short stops for young kids; dancing is
+  the joy, the stop is the spice. Freezes per round trimmed 6–8 → 5–7 so a round still
+  lands near the designed ~2 minutes; meter fill 4 → 8 s so it stays a live goal.
+- **Mid-dance encouragement** (new `FREEZE_DANCE_CHEER_EVERY_S` = 7): research says young
+  players want frequent feedback, and 15 s of narrator silence in a dance window felt
+  dead. FreezeCore cheers `freeze.dance` about every 7 s (jittered) during dances only —
+  reuses the existing clips, rotation keeps wording fresh, priority rules keep it clear
+  of "Freeze!". Core tests now DERIVE their timelines from config, so future tuning
+  can't silently invalidate them.
+- **Solo pick shows exactly ONE circle** (Nick, mid-session: "if I click one kid it
+  still shows 2"). `spareSlotToMute` now also hides the untouched circle before anyone
+  arrives (slot 0's spot is THE target; if the kid turns up in the other half, the
+  circle swaps to them). Binding by halves is unchanged — this only picks what to draw.
+  Hidden slots draw nothing (circle, buddy, label).
+- Deferred to M2+ (logged in KID-DESIGN backlog): difficulty-driven gap shortening,
+  "silliest statue" celebrations, buddy demonstrating warm-up moves, named buddies.
+
 ## 2026-11-26 — Phone play round 1 — wake lock, touch gate, adaptive circles, camera aspect
 
 Nick validated the phone path (Safari on iPhone; AirPlay to the TV is the end goal) and

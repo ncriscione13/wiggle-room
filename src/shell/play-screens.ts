@@ -271,6 +271,13 @@ export function checkScreen(
     setSpare(slot, spare): void {
       if (spare) spares.add(slot);
       else spares.delete(slot);
+      // Solo pick: the spare slot disappears entirely -- circle, buddy and
+      // label -- so one kid sees exactly one target (round 3 fix).
+      const view = stage.views.get(slot);
+      if (view !== undefined && view.hidden !== spare) {
+        view.hidden = spare;
+        stage.repaint();
+      }
     },
     destroy: () => {
       stage.destroy();

@@ -6,6 +6,7 @@
 // frozen and never blocks the other kid's snowstorm.
 
 import {
+  FREEZE_DANCE_CHEER_EVERY_S,
   FREEZE_GRACE_S,
   FREEZE_METER_FILL_S,
   FREEZE_MUSIC_GAP_S,
@@ -103,6 +104,7 @@ export class FreezeCore {
   private phaseEndS = Infinity;
   private stopIndex = -1;
   private signalS = 0;
+  private nextCheerS = Infinity;
   private stopHasCard = false;
   private anySnowstorm = false;
   private started = false;
@@ -166,6 +168,14 @@ export class FreezeCore {
           this.meters[slot] = Math.min(1, this.meters[slot] + dtS / FREEZE_METER_FILL_S);
         }
       }
+      // Long dances need company: cheer the dancing on every so often
+      // (research: young players want frequent feedback; the narrator's
+      // rotation keeps the wording fresh and the priority rules keep it
+      // out of the way of "Freeze!").
+      if (tS >= this.nextCheerS) {
+        this.say('freeze.dance');
+        this.nextCheerS = tS + this.cheerGap();
+      }
     }
     if (this.phaseName === 'stop') this.checkWobbles(tS);
 
@@ -189,6 +199,11 @@ export class FreezeCore {
 
   private say(lineId: string, player?: Slot): void {
     this.out.push({ type: 'say', lineId, ...(player !== undefined ? { player } : {}) });
+  }
+
+  /** Jittered mid-dance cheer spacing (0.8x..1.2x the base). */
+  private cheerGap(): number {
+    return FREEZE_DANCE_CHEER_EVERY_S * (0.8 + 0.4 * this.cfg.rng());
   }
 
   private applyInputs(tS: number): void {
@@ -275,6 +290,7 @@ export class FreezeCore {
           : 'freeze-mid';
       this.out.push({ type: 'music', id: musicId });
       this.phaseEndS = atS + pick(FREEZE_MUSIC_GAP_S[this.timingMode()], this.cfg.rng);
+      this.nextCheerS = atS + this.cheerGap();
       return;
     }
     if (this.phaseName === 'dance') {

@@ -1,10 +1,31 @@
 import { describe, expect, it } from 'vitest';
 import { FreezeCore, type FreezeCoreConfig, type FreezeDirective } from './core';
-import { FREEZE_SCORE_BASE_PTS, FREEZE_POSE_CARD_BONUS_PTS } from '../../motion/config';
+import {
+  FREEZE_DANCE_CHEER_EVERY_S,
+  FREEZE_METER_FILL_S,
+  FREEZE_MUSIC_GAP_S,
+  FREEZE_POSE_CARD_BONUS_PTS,
+  FREEZE_SCORE_BASE_PTS,
+  FREEZE_STOP_S,
+} from '../../motion/config';
 import type { RoundResult, Slot } from '../../games/types';
 
 // M1.9 Freeze Dance core: random stops, grace windows, Little/Big rules,
 // wobbles, snowstorm, slow-mo, benefit of the doubt -- all pure and scripted.
+// Timelines are DERIVED from config (rng=0 pins every range to its minimum),
+// so tuning the design numbers never silently invalidates these tests.
+
+const INTRO = 0.5;
+const L_DANCE = FREEZE_MUSIC_GAP_S.little.min;
+const B_DANCE = FREEZE_MUSIC_GAP_S.big.min;
+const STOP_LEN = FREEZE_STOP_S.min;
+// Little timeline: dance1 INTRO..STOP1, stop1 STOP1..+STOP_LEN, dance2, stop2.
+const STOP1 = INTRO + L_DANCE;
+const STOP2 = STOP1 + STOP_LEN + L_DANCE;
+const ROUND2_END = STOP2 + STOP_LEN + 1;
+// Big timeline (intro anchors at the first 30 Hz tick, so targets get slack).
+const B_STOP1 = INTRO + B_DANCE;
+const B_STOP2 = B_STOP1 + STOP_LEN + B_DANCE;
 
 interface Driver {
   core: FreezeCore;
@@ -46,16 +67,11 @@ function drive(cfg?: Partial<FreezeCoreConfig>): Driver {
   return d;
 }
 
-// With rng=0 and little mode: intro 0.5 s, dance = 4 s (gap min), stop = 3 s.
-// Timeline: dance1 0.5-4.5, stop1 4.5-7.5, dance2 7.5-11.5, stop2 11.5-14.5.
-const STOP1 = 4.5;
-const STOP2 = 11.5;
-
 function danceThenFreeze(d: Driver, slot: Slot, stopS: number, stillAtS: number): void {
   d.core.onMoving(slot, Math.max(0.6, stopS - 3));
   d.runTo(stopS);
   d.core.onStill(slot, stillAtS);
-  d.runTo(stopS + 3);
+  d.runTo(stopS + STOP_LEN);
 }
 
 describe('FreezeCore (M1.9)', () => {
@@ -63,7 +79,7 @@ describe('FreezeCore (M1.9)', () => {
     const d = drive();
     danceThenFreeze(d, 0, STOP1, STOP1 + 0.4);
     danceThenFreeze(d, 0, STOP2, STOP2 + 0.5);
-    d.runTo(16);
+    d.runTo(ROUND2_END);
     expect(d.byType('music-stop')).toHaveLength(2);
     expect(d.byType('statue').filter((s) => s.slot === 0)).toHaveLength(2);
     expect(d.byType('star').filter((s) => s.slot === 0)).toHaveLength(2);
@@ -76,11 +92,30 @@ describe('FreezeCore (M1.9)', () => {
   it('music comes back after each stop and the meter fills while dancing', () => {
     const d = drive();
     d.core.onMoving(0, 0.6);
-    d.runTo(4.4);
-    expect(d.core.meter(0)).toBeGreaterThan(0.8); // ~3.9 s of dancing
+    d.runTo(STOP1 - 0.1);
+    // Danced nearly the whole window: enough to fill the meter (or get close).
+    const dancedS = STOP1 - 0.1 - 0.6;
+    expect(d.core.meter(0)).toBeGreaterThan(Math.min(1, dancedS / FREEZE_METER_FILL_S) - 0.1);
     danceThenFreeze(d, 0, STOP1, STOP1 + 0.2);
-    d.runTo(8.5);
+    d.runTo(STOP1 + STOP_LEN + 1);
     expect(d.byType('music')).toHaveLength(2); // intro start + after stop 1
+  });
+
+  it('cheers the dancing on mid-dance, and never during a stop', () => {
+    const d = drive({ freezes: 1 });
+    d.core.onMoving(0, 0.6);
+    d.runTo(STOP1 + STOP_LEN + 0.5);
+    // rng=0 -> first cheer lands 0.8 x base into the dance; the little dance
+    // window is long enough to hold at least one cheer.
+    const cheers = d.byType('say').filter((s) => s.lineId === 'freeze.dance');
+    expect(cheers.length).toBeGreaterThanOrEqual(1);
+    expect(L_DANCE).toBeGreaterThan(FREEZE_DANCE_CHEER_EVERY_S * 0.8); // sanity
+    // None after the music stops: find the first music-stop position.
+    const stopAt = d.all.findIndex((x) => x.type === 'music-stop');
+    const lateCheer = d.all
+      .slice(stopAt)
+      .some((x) => x.type === 'say' && x.lineId === 'freeze.dance');
+    expect(lateCheer).toBe(false);
   });
 
   it('grace window: a late kid gets the statue but not the within-grace credit', () => {
@@ -93,12 +128,10 @@ describe('FreezeCore (M1.9)', () => {
     // Big grace = 0.5 s. Kid 0 freezes at +0.3 (inside), kid 1 at +1.4 (late).
     d.core.onMoving(0, 0.6);
     d.core.onMoving(1, 0.6);
-    d.runTo(4.5); // big gap min is 3 -> stop at 3.5... recompute below.
-    // Big mode: dance = 3 s -> stop1 at 3.5.
-    const stop1 = 3.5;
-    d.core.onStill(0, stop1 + 0.3);
-    d.core.onStill(1, stop1 + 1.4);
-    d.runTo(stop1 + 3);
+    d.runTo(B_STOP1 + 1);
+    d.core.onStill(0, B_STOP1 + 0.3);
+    d.core.onStill(1, B_STOP1 + 1.4);
+    d.runTo(B_STOP1 + STOP_LEN);
     expect(
       d
         .byType('statue')
@@ -106,7 +139,7 @@ describe('FreezeCore (M1.9)', () => {
         .sort(),
     ).toEqual([0, 1]);
     expect(d.byType('snowstorm')).toHaveLength(0); // kid 1 missed the grace
-    d.runTo(20);
+    d.runTo(B_STOP2 + STOP_LEN + 1);
     const result = d.finish();
     const p0 = result?.perPlayer.find((p) => p.slot === 0);
     const p1 = result?.perPlayer.find((p) => p.slot === 1);
@@ -123,12 +156,11 @@ describe('FreezeCore (M1.9)', () => {
       freezes: 1,
     });
     d.core.onMoving(0, 0.6);
-    const stop1 = 3.5;
-    // Still at +0.7 after the signal: outside raw grace (0.5) but inside
+    // Still at +0.7 after the music cut: outside raw grace (0.5) but inside
     // the delay-shifted one (0.4 + 0.5 = 0.9).
-    d.core.onStill(0, stop1 + 0.7);
-    d.runTo(stop1 + 3.4);
-    d.runTo(10);
+    d.core.onStill(0, B_STOP1 + 0.7);
+    d.runTo(B_STOP1 + STOP_LEN + 0.4);
+    d.runTo(B_STOP1 + STOP_LEN + 2);
     expect(d.byType('snowstorm').length + d.byType('star').length).toBeGreaterThan(0);
     const reaction = d.core.lastReactionS(0);
     expect(reaction).not.toBeNull();
@@ -143,8 +175,8 @@ describe('FreezeCore (M1.9)', () => {
     d.runTo(STOP1 + 1);
     d.core.onMoving(0, STOP1 + 1.01);
     d.core.onStill(0, STOP1 + 1.3); // 0.29 s blip < little forgive 0.6
-    d.runTo(STOP1 + 3);
-    d.runTo(10);
+    d.runTo(STOP1 + STOP_LEN);
+    d.runTo(STOP1 + STOP_LEN + 2);
     expect(d.byType('wobble').filter((w) => w.slot === 0)).toHaveLength(1);
     expect(d.finish()?.perPlayer[0]?.stars).toBe(1); // wobble never costs the star
   });
@@ -154,9 +186,9 @@ describe('FreezeCore (M1.9)', () => {
     d.core.onMoving(0, 0.6);
     d.runTo(STOP1 - 0.1);
     d.core.setTracking(0, 'coasting');
-    d.runTo(STOP1 + 3);
+    d.runTo(STOP1 + STOP_LEN);
     d.core.setTracking(0, 'tracked');
-    d.runTo(10);
+    d.runTo(STOP1 + STOP_LEN + 2);
     expect(d.finish()?.perPlayer[0]?.stars).toBe(1);
   });
 
@@ -173,14 +205,14 @@ describe('FreezeCore (M1.9)', () => {
     two.runTo(STOP1);
     two.core.onStill(0, STOP1 + 0.3);
     two.core.onStill(1, STOP1 + 0.6); // little grace = 1.0
-    two.runTo(STOP1 + 3);
-    two.runTo(10);
+    two.runTo(STOP1 + STOP_LEN);
+    two.runTo(STOP1 + STOP_LEN + 2);
     expect(two.byType('snowstorm')).toHaveLength(1);
     expect(two.finish()?.coopBonus).toBe(true);
 
     const solo = drive({ freezes: 1 });
     danceThenFreeze(solo, 0, STOP1, STOP1 + 0.2);
-    solo.runTo(10);
+    solo.runTo(STOP1 + STOP_LEN + 2);
     expect(solo.byType('snowstorm')).toHaveLength(0);
   });
 
@@ -199,27 +231,26 @@ describe('FreezeCore (M1.9)', () => {
       ],
       freezes: 2,
     });
-    // Big timing, intro anchored at the first tick: stop1 ~3.53, dance2
-    // ~6.53-9.53, stop2 ~9.53-12.53. Events carry their own clock, so only
-    // the runTo targets need slack.
+    // Big timing, intro anchored at the first tick, so events sit well inside
+    // their windows and runTo targets carry slack.
     d.core.onMoving(0, 0.6);
-    d.core.onStill(0, 3.75);
-    d.core.onMoving(0, 6.8);
-    d.core.onStill(0, 9.75);
-    d.runTo(10.2); // inside stop 2
+    d.core.onStill(0, B_STOP1 + 0.25);
+    d.core.onMoving(0, B_STOP1 + STOP_LEN + 0.3);
+    d.core.onStill(0, B_STOP2 + 0.25);
+    d.runTo(B_STOP2 + 0.7); // inside stop 2
     expect(d.byType('pose-card')).toHaveLength(1);
     d.core.setPoseMatched(0, true);
-    d.runTo(14);
+    d.runTo(B_STOP2 + STOP_LEN + 1);
     const score = d.finish()?.perPlayer[0]?.score ?? 0;
-    // Two fast freezes (reaction ~0.22 s) + card bonus.
-    expect(score).toBeGreaterThan(2 * (FREEZE_SCORE_BASE_PTS - 30) + FREEZE_POSE_CARD_BONUS_PTS);
+    // Two fast freezes (reaction ~0.28 s) + card bonus.
+    expect(score).toBeGreaterThan(2 * (FREEZE_SCORE_BASE_PTS - 35) + FREEZE_POSE_CARD_BONUS_PTS);
   });
 
   it('a kid who never freezes gets no star for that stop but no punishment either', () => {
     const d = drive({ freezes: 1 });
     d.core.onMoving(0, 0.6);
-    d.runTo(STOP1 + 3); // dances straight through the stop
-    d.runTo(10);
+    d.runTo(STOP1 + STOP_LEN); // dances straight through the stop
+    d.runTo(STOP1 + STOP_LEN + 2);
     expect(d.finish()?.perPlayer[0]?.stars).toBe(0);
     // The buddy giggles about it rather than buzzing.
     expect(d.byType('say').some((s) => s.lineId === 'freeze.wobble')).toBe(true);

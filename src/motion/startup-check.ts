@@ -30,11 +30,12 @@ export const STARTUP_VOICE_LINES: Record<StartupProblem, string> = {
   'not-seen': 'startup.not-seen',
 };
 
-/** Solo pick: once the kid is clearly engaged with ONE circle, the other
- * circle's "Step into your circle!" is noise and gets muted (playtest round
- * 2: the standing instruction on the empty circle read as the app talking
- * past the kid). With two picked, the empty circle IS the message -- never
- * muted. Returns the slot to mute, or null. */
+/** Solo pick: ONE kid gets ONE circle on screen (playtest round 3: "if I
+ * click one kid it still shows 2"). Before anyone is seen, slot 0's spot is
+ * THE target; if the kid turns up in the other half instead, the circle
+ * swaps to them (binding by halves is unchanged -- this only picks what to
+ * draw). With two picked, the empty circle IS the message -- never muted.
+ * Returns the slot to hide, or null. */
 export function spareSlotToMute(
   count: 1 | 2,
   problems: readonly [StartupProblem | null, StartupProblem | null],
@@ -43,7 +44,7 @@ export function spareSlotToMute(
   const empty0 = problems[0] === 'not-seen';
   const empty1 = problems[1] === 'not-seen';
   if (empty0 && !empty1) return 0;
-  if (empty1 && !empty0) return 1;
+  if (empty1) return 1; // kid in slot 0's half, or nobody yet: one target only
   return null;
 }
 

@@ -418,3 +418,18 @@ asked for the enablers (see DECISIONS "Phone play round 1"):
 **Phone test additions:** on the phone, hold the top-right corner 3 s → run
 the clap check over AirPlay and send the ms; note whether the circles settle
 under the kids sensibly at your phone's distance.
+
+### Playtest round 3 — longer dances + kid-design research (2026-11-26)
+
+Nick: dances too short, "make it more kid-friendly, do some research." The
+research lives in `docs/KID-DESIGN.md` (classroom freeze-dance practice,
+GoNoodle, Just Dance Kids Mode, Sesame/NN-g, Kinect lessons) with a
+principle-by-principle map of what Wiggle Room does. Shipped from it:
+
+- Dance windows 10–18 s (Little) / 8–16 s (Big), 5–7 freezes per ~2 min
+  round, meter fills in 8 s.
+- The narrator cheers the dancing on (~every 7 s mid-dance, rotating lines).
+- Solo pick shows exactly ONE circle (the "one kid still shows 2" bug); it
+  swaps sides if the kid stands in the other half.
+- Backlog logged in KID-DESIGN: difficulty-driven stop frequency, silliest-
+  statue praise, buddy demonstrating warm-up moves, named buddies.

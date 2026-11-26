@@ -6,10 +6,11 @@ import { expect, test } from '@playwright/test';
 
 test('keyboard flow: round, replay, time-up, cool-down, goodbye, parent gate', async ({ page }) => {
   test.setTimeout(180_000);
-  // Deterministic timeline (rng=0): round = 1 s intro + 4 s dance + 3 s stop
-  // = ~8 s. Session 14 s -> round 1 + the replay press fit even under
-  // parallel-worker contention; round 2 (~11.5-19.5 s) crosses time-up.
-  await page.goto('/?play=1&input=keyboard&freezes=1&intro=1&sessionS=14&cooldownS=2&rng=0');
+  // Deterministic timeline (rng=0): round = 1 s intro + 10 s dance (little
+  // gap min) + 3 s stop = ~14 s. Session 20 s -> round 1 + the replay press
+  // fit even under parallel-worker contention; round 2 (~15-29 s) crosses
+  // time-up.
+  await page.goto('/?play=1&input=keyboard&freezes=1&intro=1&sessionS=20&cooldownS=2&rng=0');
 
   await page.getByTestId('pick-2').click();
   await page.waitForSelector('canvas', { timeout: 30_000 });
@@ -67,6 +68,8 @@ test('live flow: empty room stops at the start-up check with a friendly ask', as
   await expect(page.getByTestId('check-problem-0')).toContainText('Step into your circle', {
     timeout: 30_000,
   });
+  // Solo pick = ONE circle: the spare slot's label is hidden (round 3 fix).
+  await expect(page.getByTestId('check-problem-1')).toBeHidden();
 
   // Phone play round 1: press-and-hold the top-right corner is the touch
   // twin of hold-P (phones have no P key); it opens the parent settings.
