@@ -380,7 +380,7 @@
       ]
     },
     "warmup.done": {
-      "priority": 4,
+      "priority": 3,
       "cooldownS": 0,
       "wordings": [
         {

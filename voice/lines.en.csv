@@ -17,7 +17,7 @@ warmup.squat,3,0,Squat like a frog!,Bend down low like a frog!,Froggy squat — 
 warmup.hop,3,0,"Hop, hop, hop!",Bunny hops — three big ones!,Hop like a bunny!,,
 warmup.run,3,0,"Run, run, run!",Run on your spot — fast as you can!,Speedy feet! Run in place!,,
 warmup.slow-demo,3,0,Let's try it slowly. Watch your buddy!,One more time — nice and slow.,Watch carefully — we'll go slow.,,
-warmup.done,4,0,Warm-up done! You're ready!,All warmed up! Let's play!,Wiggles ready! Here we go!,,
+warmup.done,3,0,Warm-up done! You're ready!,All warmed up! Let's play!,Wiggles ready! Here we go!,,
 freeze.intro,3,0,"When the music stops, freeze!",Dance to the music — freeze when it stops!,Music means dance. Quiet means freeze!,,
 freeze.dance,3,0,"Dance, dance, dance!",Wiggle it out!,Shake those arms and legs!,,
 freeze.freeze,2,0,Freeze!,Freeze! Hold it!,Statue time!,,

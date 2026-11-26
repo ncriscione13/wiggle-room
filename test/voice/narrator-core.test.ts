@@ -155,3 +155,51 @@ describe('NarratorCore (M1.6)', () => {
     expect(core.next()?.pan).toBeGreaterThan(0);
   });
 });
+
+describe('clearPending (playtest round 2: voice must match the screen)', () => {
+  it('drops queued instructions and praise, keeping queued safety lines', () => {
+    const { core } = makeCore();
+    core.say('instr.line');
+    expect(core.next()?.lineId).toBe('instr.line'); // now playing
+    core.say('instr.line'); // stale prompt piling up behind it
+    core.say('praise.line');
+    core.say('help.line');
+    core.clearPending(3);
+    core.onPlaybackEnd();
+    expect(core.next()?.lineId).toBe('help.line'); // safety survived
+    core.onPlaybackEnd();
+    expect(core.next()).toBeNull(); // instruction + praise are gone
+  });
+
+  it('clearPending(1) empties the whole queue (phase boundary)', () => {
+    const { core } = makeCore();
+    core.say('help.line');
+    core.say('instr.line');
+    core.clearPending(1);
+    expect(core.next()).toBeNull();
+  });
+
+  it('never cuts off the clip that is already playing', () => {
+    const { core } = makeCore();
+    core.say('instr.line');
+    expect(core.next()?.lineId).toBe('instr.line');
+    core.clearPending(1); // mid-playback
+    expect(core.next()).toBeNull(); // nothing to start, nothing interrupted
+    core.onPlaybackEnd();
+    core.say('instr.line');
+    expect(core.next()?.lineId).toBe('instr.line'); // core still works after
+  });
+
+  it('a fresh prompt said right after a clear is next in line', () => {
+    const { core } = makeCore();
+    core.say('instr.line');
+    expect(core.next()?.lineId).toBe('instr.line');
+    core.say('instr.line'); // stale: screen has moved on
+    core.clearPending(3);
+    core.say('instr.line'); // the CURRENT move's prompt
+    core.onPlaybackEnd();
+    expect(core.next()?.lineId).toBe('instr.line');
+    core.onPlaybackEnd();
+    expect(core.next()).toBeNull(); // exactly one prompt played, not two
+  });
+});

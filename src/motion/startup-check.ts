@@ -14,6 +14,7 @@ import {
   STARTUP_FLICKER_MAX_RATIO,
   STARTUP_TOO_CLOSE_SPAN_RATIO,
 } from './config.ts';
+import type { Slot } from '../games/types';
 import type { PlayerView } from './players.ts';
 
 export type StartupProblem =
@@ -28,6 +29,23 @@ export const STARTUP_VOICE_LINES: Record<StartupProblem, string> = {
   crowded: 'startup.crowded',
   'not-seen': 'startup.not-seen',
 };
+
+/** Solo pick: once the kid is clearly engaged with ONE circle, the other
+ * circle's "Step into your circle!" is noise and gets muted (playtest round
+ * 2: the standing instruction on the empty circle read as the app talking
+ * past the kid). With two picked, the empty circle IS the message -- never
+ * muted. Returns the slot to mute, or null. */
+export function spareSlotToMute(
+  count: 1 | 2,
+  problems: readonly [StartupProblem | null, StartupProblem | null],
+): Slot | null {
+  if (count !== 1) return null;
+  const empty0 = problems[0] === 'not-seen';
+  const empty1 = problems[1] === 'not-seen';
+  if (empty0 && !empty1) return 0;
+  if (empty1 && !empty0) return 1;
+  return null;
+}
 
 export interface StartupStatus {
   ready: boolean;

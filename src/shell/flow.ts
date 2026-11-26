@@ -14,7 +14,12 @@ import {
 } from '../motion/config';
 import { KeyboardMotion } from '../motion/keyboard';
 import type { MotionSource } from '../motion/kit';
-import { StartupChecker, STARTUP_VOICE_LINES } from '../motion/startup-check';
+import {
+  spareSlotToMute,
+  StartupChecker,
+  STARTUP_VOICE_LINES,
+  type StartupProblem,
+} from '../motion/startup-check';
 import { WarmupFlow } from '../motion/warmup-flow';
 import { playerColors, cssRgb, colors, px, theme, typography } from '../ui/theme';
 import { createNarrator, type NarratorHandle } from '../voice/narrator';
@@ -250,8 +255,10 @@ export async function bootPlay(root: HTMLElement): Promise<void> {
     const readySinceS = new Map<Slot, number>();
     activeSlots = await new Promise<Slot[]>((resolve) => {
       const offTap = lm.onFrame((tS, frame, luma) => {
+        const problems: [StartupProblem | null, StartupProblem | null] = [null, null];
         for (const [slot, checker] of checkers) {
           const status = checker.update(tS, frame.players[slot], luma);
+          problems[slot] = status.problem;
           screen.setStatus(slot, status.problem, status.progress01);
           screen.setPose(slot, lm.kit.pose(slot), tS);
           if (status.ready) readySinceS.set(slot, readySinceS.get(slot) ?? tS);
@@ -264,6 +271,11 @@ export async function bootPlay(root: HTMLElement): Promise<void> {
             voice.say(STARTUP_VOICE_LINES[status.problem], { player: slot });
           }
         }
+        // Solo pick: the unused circle stops instructing once the kid is
+        // clearly engaged with the other one (screen/voice must agree).
+        const mute = spareSlotToMute(count, problems);
+        screen.setSpare(0, mute === 0);
+        screen.setSpare(1, mute === 1);
         const ready = [...readySinceS.keys()].sort();
         if (count === 1 && ready.length >= 1) {
           offTap();
@@ -292,6 +304,9 @@ export async function bootPlay(root: HTMLElement): Promise<void> {
         }
       });
     });
+    // The check is over: anything still queued describes moments that are
+    // gone (playtest round 2: the voice must match the screen it plays over).
+    voice.clearPending(1);
     voice.say('startup.ready');
     screen.destroy();
   }
@@ -325,7 +340,14 @@ export async function bootPlay(root: HTMLElement): Promise<void> {
           if (view.pose !== null && view.seenNow) flow.push(slot, view.pose, tS);
           screen.setPose(slot, lm.kit.pose(slot), tS);
         }
-        for (const d of flow.tick(tS)) {
+        const directives = flow.tick(tS);
+        // A new prompt means the screen moved on: a stale queued prompt
+        // would speak the WRONG move over the new screen. Drop instructions
+        // and praise first; the new prompt queues right behind this.
+        if (directives.some((d) => d.type === 'move' && d.phase === 'prompt')) {
+          voice.clearPending(3);
+        }
+        for (const d of directives) {
           if (d.type === 'say') voice.say(d.lineId);
           else if (d.type === 'move') screen.setMove(d.move, d.phase);
           else {

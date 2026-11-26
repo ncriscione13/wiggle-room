@@ -387,3 +387,16 @@ line showed CPU inference at 97.7 ms (320×240 after the ladder). Fixed same day
 `/?recheck=1` (and stand in view while it measures) so the check can re-pick
 the camera size AND delegate; the old stored record keeps the old config
 otherwise. Then the TV list above stands as written.
+
+### Playtest round 2 — desk results, fixes shipped (2026-11-26)
+
+With the kids at the computer: the stage didn't fill the screen during
+calibration, and the voice spoke directions that didn't match the screen (see
+DECISIONS "M1 playtest round 2"):
+
+- Check + warm-up are full-screen now; labels float over each kid's half.
+- The narrator queue gets cleared when the screen moves on (phase changes,
+  and before each new warm-up prompt) — the voice always describes the moment
+  it plays in. The spare circle in a solo pick stops saying "Step into your
+  circle!" once the kid picked the other one, and the warm-up's closing line
+  is no longer silently dropped.

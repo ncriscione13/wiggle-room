@@ -5,6 +5,7 @@ import type { LumaStats } from '../../src/tracking/pose-source';
 import { STARTUP_CHECK_FULL_BODY_S } from '../../src/motion/config';
 import { PlayerTracker } from '../../src/motion/players';
 import {
+  spareSlotToMute,
   StartupChecker,
   STARTUP_VOICE_LINES,
   type StartupProblem,
@@ -171,5 +172,22 @@ describe('StartupChecker (M1.3)', () => {
     expect(readyAt).not.toBeNull();
     if (readyAt !== null) expect(readyAt).toBeLessThanOrEqual(1.5);
     expect(lostReadyAfter).toBe(false);
+  });
+});
+
+describe('spareSlotToMute (playtest round 2: solo pick)', () => {
+  it('mutes the empty circle once the solo kid is clearly in the other one', () => {
+    expect(spareSlotToMute(1, ['not-seen', null])).toBe(0);
+    expect(spareSlotToMute(1, [null, 'not-seen'])).toBe(1);
+    expect(spareSlotToMute(1, ['not-seen', 'too-close'])).toBe(0); // being fixed over there
+  });
+
+  it('keeps both circles asking while nobody has arrived yet', () => {
+    expect(spareSlotToMute(1, ['not-seen', 'not-seen'])).toBeNull();
+  });
+
+  it('never mutes anything with two kids picked (the missing kid IS the message)', () => {
+    expect(spareSlotToMute(2, ['not-seen', null])).toBeNull();
+    expect(spareSlotToMute(2, [null, 'not-seen'])).toBeNull();
   });
 });

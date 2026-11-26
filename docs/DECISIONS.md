@@ -2,6 +2,38 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-26 — M1 playtest round 2 — full-screen stage + the voice must match the screen
+
+Nick's second desk run with the kids: the calibration view sat in a window instead of
+filling the TV, and the narrator kept speaking directions that didn't match what the
+screen showed at that moment.
+
+- **Full-bleed camera screens.** Check + warm-up now use a full-screen column: heading,
+  then the stage canvas scaled to fill the remaining screen (replaced-element
+  max-width/max-height keeps the 16:9 bitmap undistorted), with the status labels as
+  pills FLOATING over each kid's half of the picture (and the warm-up prompt/hint over
+  the top/bottom). Pills sit above the caption strip's area.
+- **Root cause of the voice mismatch: the narrator queue had no eraser.** Lines queued
+  for a moment played after that moment was gone — worst in the warm-up, where prompts
+  (priority 3, no cooldown) piled up behind the intro and each other while the move
+  timer marched on, so the voice drifted a full move behind the screen and never
+  recovered. `NarratorCore.clearPending(minPriority)` drops QUEUED lines (never cuts
+  the playing clip); the flow clears everything (1) at the check→warm-up boundary and
+  clears instructions/praise (3) right before each new move prompt is said, so the
+  freshest prompt is always next. Self-healing: even if one prompt plays late, the
+  next move drops it.
+- **Solo pick: the spare circle stops instructing.** With one kid picked, both circles
+  used to show "Step into your circle!" forever; once the kid is clearly engaged with
+  one circle the other's label is muted (`spareSlotToMute`, pure + tested). With two
+  picked it never mutes — the empty circle IS the message.
+- **`warmup.done` reclassified praise→instruction (CSV 4→3).** As priority-4 praise
+  with a default event time it was silently dropped whenever a prompt clip was still
+  playing (>1 s late rule) — the warm-up usually ended with no closing line. Clips
+  unchanged; manifest regenerated.
+- Wordings on screen vs voice are intentionally not identical (3 rotating wordings per
+  line; captions show the exact spoken text) — the fix is timing coherence, not
+  matching strings.
+
 ## 2026-11-26 — M1 playtest round 1 — invisible circles + slow-machine results
 
 Nick's first desk playtest (computer, not the TV yet) surfaced one UX blocker and one

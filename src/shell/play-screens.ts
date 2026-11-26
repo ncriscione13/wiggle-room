@@ -80,13 +80,42 @@ export interface CheckScreen {
   setStatus(slot: Slot, problem: StartupProblem | null, progress01: number): void;
   /** Live buddy pose for the slot (null while unseen); tS is the motion clock. */
   setPose(slot: Slot, pose: BuddyDrawPose | null, tS: number): void;
+  /** Solo pick: blank the empty circle's instruction once the kid clearly
+   * chose the other one (the label was reading as the app talking past them). */
+  setSpare(slot: Slot, spare: boolean): void;
   destroy(): void;
 }
 
+/** Full-bleed base for the camera screens (playtest round 2: the stage must
+ * fill the screen like the game does, not sit in a window). */
+function fullScreen(testid: string): HTMLDivElement {
+  const el = document.createElement('div');
+  el.dataset['testid'] = testid;
+  el.style.cssText = `
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    text-align: center; z-index: 25;
+    background: ${cssRgb(colors.surfaceNight)};
+    color: ${cssRgb(colors.textSoft)};
+    font-family: ${typography.family};
+  `;
+  return el;
+}
+
+/** A readable pill for text floating over the stage picture. */
+function overlayPill(p: HTMLParagraphElement): HTMLParagraphElement {
+  p.style.background = `${cssRgb(colors.surfaceNight)}b3`;
+  p.style.borderRadius = '14px';
+  p.style.padding = '8px 22px';
+  p.style.margin = '0';
+  return p;
+}
+
 /** The live mirrored view both camera screens share: floor circles + buddies
- * painted per frame (playtest fix -- kids must SEE where the circles are). */
+ * painted per frame (playtest fix -- kids must SEE where the circles are).
+ * `frame` fills the remaining screen; `overlay` floats labels on the picture. */
 interface LiveStageView {
-  canvas: HTMLCanvasElement;
+  frame: HTMLDivElement;
+  overlay: HTMLDivElement;
   views: Map<Slot, CheckSlotView>;
   /** Function property (not a method) so screens can hand it out detached. */
   setPose: (slot: Slot, pose: BuddyDrawPose | null, tS: number) => void;
@@ -98,14 +127,19 @@ const STAGE_CANVAS_W = 1280;
 const STAGE_CANVAS_H = 720;
 
 function liveStageView(players: PlayerInfo[], testid: string): LiveStageView {
+  const frame = document.createElement('div');
+  frame.style.cssText =
+    'position: relative; flex: 1 1 auto; min-height: 0; width: 100%; display: grid; place-items: center;';
   const canvas = document.createElement('canvas');
   canvas.width = STAGE_CANVAS_W;
   canvas.height = STAGE_CANVAS_H;
   canvas.dataset['testid'] = testid;
-  canvas.style.cssText = `
-    width: min(78vw, 1040px); max-width: 100%; border-radius: 18px;
-    background: ${cssRgb(colors.surfaceRaised)};
-  `;
+  // Replaced element: max-width + max-height scale it to fit the frame while
+  // keeping the 16:9 bitmap ratio (no distortion, bars match the night bg).
+  canvas.style.cssText = 'display: block; max-width: 100%; max-height: 100%;';
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position: absolute; inset: 0; pointer-events: none;';
+  frame.append(canvas, overlay);
   const ctx = canvas.getContext('2d');
   const views = new Map<Slot, CheckSlotView>();
   for (const player of players) {
@@ -131,7 +165,8 @@ function liveStageView(players: PlayerInfo[], testid: string): LiveStageView {
     schedule();
   };
   return {
-    canvas,
+    frame,
+    overlay,
     views,
     setPose,
     repaint: schedule,
@@ -145,26 +180,31 @@ function liveStageView(players: PlayerInfo[], testid: string): LiveStageView {
  * buddy in it; the circle fills green as the full-body second accumulates
  * (DESIGN start-up check: "each circle shows the kid's buddy"). */
 export function checkScreen(root: HTMLElement, players: PlayerInfo[]): CheckScreen {
-  const el = screen('check-screen');
-  el.append(heading('Can I see you head to toe?'));
+  const el = fullScreen('check-screen');
+  const title = heading('Can I see you head to toe?');
+  title.style.padding = '12px 0 8px';
+  el.append(title);
   const stage = liveStageView(players, 'check-stage');
-  el.append(stage.canvas);
+  el.append(stage.frame);
+  // Labels float over the bottom of the picture, one per half.
   const row = document.createElement('div');
-  // Same width as the stage canvas, so each label sits under its kid's half.
-  row.style.cssText =
-    'display: flex; justify-content: center; width: min(78vw, 1040px); margin: 0 auto;';
+  // bottom 64px: clear of the caption strip that appears while lines play.
+  row.style.cssText = 'position: absolute; left: 0; right: 0; bottom: 64px; display: flex;';
+  stage.overlay.append(row);
   const labels = new Map<Slot, HTMLParagraphElement>();
+  const spares = new Set<Slot>();
   // Mirrored stage: slot 0 (image-left) stands on the screen-right, so its
-  // label sits under the right half.
+  // label sits over the right half.
   for (const player of [...players].sort((a, b) => b.slot - a.slot)) {
-    const label = note('…');
+    const cell = document.createElement('div');
+    cell.style.cssText = 'flex: 1 1 0; display: grid; place-items: center;';
+    const label = overlayPill(note('…'));
     label.dataset['testid'] = `check-problem-${String(player.slot)}`;
-    label.style.flex = '1 1 0';
     label.style.color = cssRgb(colors[player.color]);
-    row.append(label);
+    cell.append(label);
+    row.append(cell);
     labels.set(player.slot, label);
   }
-  el.append(row);
   root.append(el);
   return {
     setStatus(slot, problem, progress01): void {
@@ -173,11 +213,22 @@ export function checkScreen(root: HTMLElement, players: PlayerInfo[]): CheckScre
       if (label === undefined || view === undefined) return;
       view.progress01 = progress01;
       view.ready = problem === null && progress01 >= 1;
-      label.textContent =
-        problem !== null ? PROBLEM_LABELS[problem] : progress01 >= 1 ? 'Ready! ✓' : 'Hold still…';
+      const spare = spares.has(slot);
+      label.textContent = spare
+        ? ''
+        : problem !== null
+          ? PROBLEM_LABELS[problem]
+          : progress01 >= 1
+            ? 'Ready! ✓'
+            : 'Hold still…';
+      label.style.visibility = spare ? 'hidden' : 'visible';
       stage.repaint();
     },
     setPose: stage.setPose,
+    setSpare(slot, spare): void {
+      if (spare) spares.add(slot);
+      else spares.delete(slot);
+    },
     destroy: () => {
       stage.destroy();
       el.remove();
@@ -203,15 +254,27 @@ const MOVE_LABELS: Record<WarmupMoveId, string> = {
 };
 
 export function warmupScreen(root: HTMLElement, players: PlayerInfo[]): WarmupScreen {
-  const el = screen('warmup-screen');
-  el.append(heading('Wiggle warm-up!'));
-  const move = document.createElement('p');
-  move.dataset['testid'] = 'warmup-move';
-  move.style.cssText = `font-size: ${px(typography.titlePx)}; margin: 0; color: ${cssRgb(colors.butter)};`;
+  const el = fullScreen('warmup-screen');
+  const title = heading('Wiggle warm-up!');
+  title.style.padding = '12px 0 8px';
+  el.append(title);
   // The kid watches their own buddy do the moves with them, inside their
-  // circle (playtest fix: the moves were text-only before).
+  // circle (playtest fix: the moves were text-only before). The move prompt
+  // floats big over the top of the picture; the reminder sits at the bottom.
   const stage = liveStageView(players, 'warmup-stage');
-  el.append(move, stage.canvas, note('Stay in your circle and copy the moves!'));
+  el.append(stage.frame);
+  const move = overlayPill(document.createElement('p'));
+  move.dataset['testid'] = 'warmup-move';
+  move.style.cssText += `
+    position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+    font-size: ${px(typography.titlePx)}; color: ${cssRgb(colors.butter)};
+  `;
+  // Sits above the caption strip (captions land bottom-center while lines
+  // are spoken, which during the warm-up is most of the time).
+  const hint = overlayPill(note('Stay in your circle and copy the moves!'));
+  hint.style.cssText +=
+    'position: absolute; bottom: 64px; left: 50%; transform: translateX(-50%); width: max-content;';
+  stage.overlay.append(move, hint);
   root.append(el);
   return {
     setMove(id, phase): void {

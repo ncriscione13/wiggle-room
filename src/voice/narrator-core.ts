@@ -84,6 +84,21 @@ export class NarratorCore {
     this.playingPriority = null;
   }
 
+  /** Drop every QUEUED request at `minPriority` or below in urgency (i.e.
+   * numeric priority >= minPriority); the clip already playing is never cut.
+   * Playtest round 2: the screen moves on but queued lines used to pile up
+   * and play late -- the voice must describe the moment it plays IN, so a
+   * phase change clears everything (1) and a new prompt clears stale
+   * instructions/praise (3) before it is said. */
+  clearPending(minPriority: 1 | 2 | 3 | 4 = 1): void {
+    for (let i = this.queue.length - 1; i >= 0; i -= 1) {
+      const req = this.queue[i];
+      if (req === undefined) continue;
+      const priority = this.lines.get(req.lineId)?.priority ?? 9;
+      if (priority >= minPriority) this.queue.splice(i, 1);
+    }
+  }
+
   /** The next clip to start, or null (idle with empty queue, or mid-playback
    * with nothing allowed to preempt). Starting is implied: callers play what
    * they are given. */

@@ -25,6 +25,10 @@ export interface NarratorHandle extends Narrator {
   /** Ducking hook: true while any clip is playing. */
   onSpeaking(cb: (speaking: boolean) => void): () => void;
   setVolume(volume01: number): void;
+  /** Drop queued lines at/below this urgency (numeric priority >= min);
+   * never cuts the clip mid-word. Phase changes clear all (1); a fresh
+   * prompt clears stale instructions/praise (3) before being said. */
+  clearPending(minPriority?: 1 | 2 | 3 | 4): void;
   /** Call from a user gesture once; resumes a suspended AudioContext. */
   resume(): Promise<void>;
 }
@@ -119,6 +123,9 @@ export async function createNarrator(): Promise<NarratorHandle> {
     say(lineId: string, options?: SayOptions): void {
       core.say(lineId, options ?? {});
       pump();
+    },
+    clearPending(minPriority?: 1 | 2 | 3 | 4): void {
+      core.clearPending(minPriority);
     },
     onCaption(cb) {
       captionCbs.add(cb);
