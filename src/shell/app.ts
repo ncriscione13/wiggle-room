@@ -3,8 +3,12 @@
 // (dev only) mount the recorder + clip drag-and-drop.
 
 import { openCamera, CameraOpenError, type CameraHandle } from '../tracking/camera';
-import { DEVICE_CHECK_DURATION_S } from '../motion/config';
-import { DEVICE_CHECK_TRACKING_MAX_S } from '../motion/config';
+import { DEVICE_CHECK_DURATION_S, DEVICE_CHECK_TRACKING_MAX_S } from '../motion/config';
+import {
+  createLiveTransport,
+  createPoseWorker,
+  WorkerPoseSource,
+} from '../tracking/worker-pose-source';
 import {
   clearDeviceCheckRecord,
   collectBenchmarkSamples,
@@ -23,7 +27,7 @@ import { screenFromUrl, sourceConfigFromUrl, type SourceConfig } from '../tracki
 import { mountLagTestScreen } from '../debug/lag-test';
 import { mountClipRecordingDirector } from '../debug/clip-recording';
 import type { ClipFile } from '../tracking/clip-format';
-import type { PoseSource } from '../tracking/pose-source';
+import type { InstrumentedPoseSource, PoseSource } from '../tracking/pose-source';
 import { mountPoseStage, type PoseStage } from '../ui/pose-stage';
 import { mountDebugOverlay, type DebugOverlay } from '../debug/overlay';
 import { mountDevTools } from '../debug/dev-tools';
@@ -52,6 +56,57 @@ const round1 = (n: number): number => Math.round(n * 10) / 10;
 /** Thrown when a benchmark can't complete (source stopped mid-bench); the
  * check is skipped without saving a record and without an error screen. */
 class BenchAborted extends Error {}
+
+/** M0.9: how live sources get made. Worker tracking is primary (model loaded
+ * once, kept across camera reopenings); the main-thread pipeline remains as
+ * the fallback when the worker can't start at all. */
+interface LiveFactory {
+  delegate: 'GPU' | 'CPU';
+  locus: 'worker' | 'main';
+  make(camera: CameraHandle): { source: InstrumentedPoseSource; detail(): string };
+  close(): void;
+}
+
+async function createLiveFactory(): Promise<LiveFactory> {
+  // Tuning knob: ?delegate=cpu|gpu pins the worker's inference delegate.
+  const raw = new URLSearchParams(window.location.search).get('delegate');
+  const pinned: readonly ('GPU' | 'CPU')[] | undefined =
+    raw === 'cpu' ? ['CPU'] : raw === 'gpu' ? ['GPU'] : undefined;
+  try {
+    const handle = await createPoseWorker(
+      undefined,
+      pinned !== undefined ? { delegateOrder: pinned } : {},
+    );
+    return {
+      delegate: handle.delegate,
+      locus: 'worker',
+      make(camera: CameraHandle) {
+        const info = createLiveTransport(handle.worker, camera, handle.hasMSTP);
+        return {
+          source: new WorkerPoseSource({ handle, transport: info.transport }),
+          detail: () => `worker · ${info.mode()}`,
+        };
+      },
+      close: () => {
+        handle.close();
+      },
+    };
+  } catch (error) {
+    console.warn('pose worker unavailable; falling back to main-thread tracking', error);
+    const handle = await createPoseLandmarker();
+    return {
+      delegate: handle.delegate,
+      locus: 'main',
+      make: (camera: CameraHandle) => ({
+        source: new LivePoseSource({ video: camera.video, landmarker: handle.landmarker }),
+        detail: () => 'main thread',
+      }),
+      close: () => {
+        handle.close();
+      },
+    };
+  }
+}
 
 function startStageSession(
   root: HTMLElement,
@@ -120,10 +175,11 @@ async function bootLagTest(root: HTMLElement, config: SourceConfig): Promise<voi
     return;
   }
   let camera: CameraHandle | null = null;
+  let factory: LiveFactory | null = null;
   try {
     camera = await openCamera();
-    const handle = await createPoseLandmarker();
-    const live = new LivePoseSource({ video: camera.video, landmarker: handle.landmarker });
+    factory = await createLiveFactory();
+    const live = factory.make(camera).source;
     live.onError(() => {
       renderCameraErrorScreen(root, 'unknown');
     });
@@ -134,6 +190,7 @@ async function bootLagTest(root: HTMLElement, config: SourceConfig): Promise<voi
     // and name the real problem: a thrown CameraOpenError keeps its kind;
     // anything else here is the tracking engine failing to load.
     camera?.stop();
+    factory?.close();
     const kind = error instanceof CameraOpenError ? error.kind : 'model';
     renderCameraErrorScreen(root, kind);
   }
@@ -143,10 +200,11 @@ async function bootLagTest(root: HTMLElement, config: SourceConfig): Promise<voi
  * framing feedback. Live camera only; no device check in the way. */
 async function bootRecord(root: HTMLElement): Promise<void> {
   let camera: CameraHandle | null = null;
+  let factory: LiveFactory | null = null;
   try {
     camera = await openCamera();
-    const handle = await createPoseLandmarker();
-    const live = new LivePoseSource({ video: camera.video, landmarker: handle.landmarker });
+    factory = await createLiveFactory();
+    const live = factory.make(camera).source;
     live.onError(() => {
       renderCameraErrorScreen(root, 'unknown');
     });
@@ -164,6 +222,7 @@ async function bootRecord(root: HTMLElement): Promise<void> {
     );
   } catch (error) {
     camera?.stop();
+    factory?.close();
     const kind = error instanceof CameraOpenError ? error.kind : 'model';
     renderCameraErrorScreen(root, kind);
   }
@@ -217,21 +276,22 @@ export async function bootApp(root: HTMLElement): Promise<void> {
     return;
   }
 
-  let handle: Awaited<ReturnType<typeof createPoseLandmarker>> | null = null;
+  let factory: LiveFactory | null = null;
   try {
-    handle = await createPoseLandmarker();
-    const landmarker = handle;
+    factory = await createLiveFactory();
+    const f = factory;
 
-    const attach = async (cam: CameraHandle): Promise<LivePoseSource> => {
-      const live = new LivePoseSource({ video: cam.video, landmarker: landmarker.landmarker });
+    const attach = async (cam: CameraHandle): Promise<InstrumentedPoseSource> => {
+      const made = f.make(cam);
+      const live = made.source;
       live.onError(() => {
         renderCameraErrorScreen(root, 'unknown');
       });
       const s = startStageSession(root, live, labelOf(cam), () => {
         cam.stop();
       });
-      s.overlay.events.push(`tracking started · ${landmarker.delegate}`, 0);
       await live.start();
+      s.overlay.events.push(`tracking started · ${f.delegate} · ${made.detail()}`, 0);
       return live;
     };
 
@@ -277,7 +337,7 @@ export async function bootApp(root: HTMLElement): Promise<void> {
           p99Ms: round1(summary.p99S * 1000),
           widthPx: camera.widthPx,
           heightPx: camera.heightPx,
-          delegate: landmarker.delegate,
+          delegate: f.delegate,
           posesSeen: finalBench.maxPoses,
           warned: outcome.warned,
           atMs: Date.now(),
@@ -294,7 +354,7 @@ export async function bootApp(root: HTMLElement): Promise<void> {
         if (session?.source !== live) {
           // Something else (a dropped clip) took over mid-check; stand down.
           chip.remove();
-          landmarker.close();
+          f.close();
           return;
         }
       }
@@ -341,7 +401,7 @@ export async function bootApp(root: HTMLElement): Promise<void> {
       const poseCount = live.latest()?.poses.filter((p) => p !== null).length ?? 0;
       chip.textContent =
         `Tracking · ${String(live.frames())} frames · ${String(poseCount)} poses · ` +
-        `${labelOf(camera)} · ${landmarker.delegate}`;
+        `${labelOf(camera)} · ${f.delegate}·${f.locus}`;
     };
     const chipInterval = window.setInterval(update, 500);
 
@@ -349,7 +409,7 @@ export async function bootApp(root: HTMLElement): Promise<void> {
       window.clearInterval(chipInterval);
       offUpgrade();
       chip.remove();
-      landmarker.close();
+      f.close();
       liveTeardown = null;
     };
   } catch (error) {
@@ -359,7 +419,7 @@ export async function bootApp(root: HTMLElement): Promise<void> {
     session = null;
     camera.stop();
     chip.remove();
-    handle?.close();
+    factory?.close();
     const kind = error instanceof CameraOpenError ? error.kind : 'model';
     renderCameraErrorScreen(root, kind);
   }

@@ -82,6 +82,8 @@ Goal: two kids tracked live, fast enough, with tools to measure it.
   - One kid walks out and back
   - Dim room 30 s
 
+- [x] M0.9 (added 2026-11-26 after desktop tuning, Nick-approved): move tracking into a Web Worker (DESIGN "Lag budget" escalation). Primary: transferred camera track + MediaStreamTrackProcessor in the worker; fallback: main-thread rVFC shipping ImageBitmaps; last resort: existing main-thread pipeline. Rendering holds 60 fps during live tracking; pose delivery near every camera frame; "process each new frame exactly once, never queue" enforced in the worker.
+
 Acceptance: two kids tracked live; device check shows tracking ≤ 20 ms on the test laptop; `npm run check` green. Phase report lists the lag test and clip recording for me.
 
 ---

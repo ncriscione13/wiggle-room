@@ -27,13 +27,14 @@ export default defineConfig({
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] }, testIgnore: /render-fps/ },
     {
-      // Perf measurements run AFTER the functional suite, alone: sharing the
-      // machine with parallel browsers (and MediaPipe wasm inference) skews
-      // fps numbers badly (measured 46 fps under contention vs 60 solo).
+      // Perf measurements run AFTER the functional suite, and serially among
+      // themselves: sharing the machine with ANY parallel browser (incl. each
+      // other) skews fps numbers badly (46 fps under contention vs 60 solo).
       name: 'perf',
       use: { ...devices['Desktop Chrome'] },
       dependencies: ['chromium'],
       testMatch: /render-fps/,
+      fullyParallel: false,
     },
   ],
   webServer: {

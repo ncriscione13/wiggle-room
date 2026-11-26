@@ -28,3 +28,10 @@ export interface PoseSource {
   /** Newest frame for pull-style consumers; null before the first frame. */
   latest(): PoseFrame | null;
 }
+
+/** What the app shell needs from a LIVE source beyond PoseSource (both the
+ * main-thread and the worker implementation provide it). */
+export interface InstrumentedPoseSource extends PoseSource {
+  frames(): number;
+  onError(handler: (error: unknown) => void): () => void;
+}

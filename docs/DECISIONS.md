@@ -2,6 +2,34 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-26 — M0.9 — Worker tracking (and the GPU-in-worker trap)
+
+- **Architecture**: one tracking worker per app boot holds the MediaPipe model across
+  camera reopenings (the ladder swaps tracks, not workers). Primary frame path: a cloned
+  camera track transferred to the worker, read via MediaStreamTrackProcessor — zero
+  main-thread work per frame and no dependency on video compositing. Fallback: main-side
+  rVFC shipping ImageBitmaps (one in flight). Last resort: the old main-thread pipeline
+  (`GPU·main` on the chip). The "exactly once, never queue" rule lives in
+  `LatestFrameGate` (skipped VideoFrames are close()d or capture stalls).
+- **THE decision — CPU-first delegate in the worker.** Measured on real hardware, fake
+  camera, same machine: GPU main-thread (old) 50–57 fps render; **GPU-in-worker 24 fps**
+  (the GPU is one shared resource — moving threads doesn't parallelize it, and
+  cross-context ReadPixels syncs serialize brutally); **CPU-in-worker 60.3 fps render,
+  inference 25.4 ms avg / 31.1 p99 @640 — same cost as GPU here, full camera-rate
+  delivery (49.9 ms interval at a 20 fps camera)**. CPU-first is also CI-identical
+  (no SwiftShader contention), which made the live-fps perf test honest everywhere.
+  `?delegate=cpu|gpu` pins it for tuning; the order is test-pinned.
+- **Module-worker wasm**: `FilesetResolver.forVisionTasks(root, /*useModule*/ true)` —
+  Vite workers are ESM, importScripts throws, and the classic loader dies with
+  "ModuleFactory not set". This is why both wasm variants ship in public/mediapipe.
+- **Perf measurement lessons (rounds 2–3)**: two fps tests in separate files still ran in
+  parallel inside the perf project — merged into one file with `fullyParallel: false`.
+  And orphaned experiment browsers (headed Chrome holding a webcam + GPU from a crashed
+  script) silently poisoned local perf numbers for a stretch — kill experiment processes
+  before trusting measurements.
+- The live-tracking e2e now asserts `worker` on the chip, so a silent fallback to
+  main-thread tracking fails CI instead of hiding.
+
 ## 2026-11-26 — M0 tuning round 3 — attended measurements on Nick's desktop
 
 Three valid measurements on the same machine (GPU delegate, Chrome, real webcam):

@@ -13,6 +13,8 @@ test('live tracking starts from local assets and processes frames', async ({ pag
   // Wasm + model load from this origin; the first-run device check (possibly
   // walking the reduction ladder on a slow runner) happens before "Tracking".
   await expect(chip).toContainText('Tracking', { timeout: 90000 });
+  // M0.9: inference must be running in the worker, not on the main thread.
+  await expect(chip).toContainText('worker');
 
   const count = async (): Promise<number> => {
     const text = (await chip.textContent()) ?? '';

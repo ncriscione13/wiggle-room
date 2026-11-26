@@ -1,0 +1,193 @@
+// Pose worker core (M0.9): everything the tracking worker does, written
+// against structural deps so it unit-tests in node. The real worker entry
+// (pose-worker.ts) wires it to MediaPipe + MediaStreamTrackProcessor.
+//
+// Frame policy (CLAUDE.md rule 2, now enforced here): one detect in flight,
+// newest frame wins, superseded frames are closed immediately.
+
+import { LatestFrameGate } from './latest-frame-gate';
+import { convertPoseResult, MonotonicClock, type PoseResultLike } from './live-pose-source';
+import type { ClipPose } from './clip-format';
+
+export interface LandmarkerConfig {
+  wasmRoot: string;
+  modelUrl: string;
+  numPoses: number;
+  /** Delegates to try, in order. Default ['GPU', 'CPU']; the app sends
+   * ['CPU', 'GPU'] for worker tracking -- GPU-in-worker contends with
+   * rendering for the one GPU and tanks fps (measured 24 vs 60). */
+  delegateOrder?: readonly ('GPU' | 'CPU')[];
+}
+
+export type InMessage =
+  | ({ type: 'init' } & LandmarkerConfig)
+  | { type: 'track' }
+  | { type: 'frame'; tMs: number }
+  | { type: 'detach' }
+  | { type: 'close' };
+
+export type OutMessage =
+  | { type: 'ready'; delegate: 'GPU' | 'CPU'; hasMSTP: boolean }
+  | { type: 'init-error'; message: string }
+  | { type: 'result'; tMs: number; inferenceMs: number; poses: (ClipPose | null)[] }
+  | { type: 'error'; message: string };
+
+export interface WorkerLandmarker {
+  detectForVideo(source: unknown, timestampMs: number): PoseResultLike;
+  close?(): void;
+}
+
+export interface PortLike {
+  postMessage(message: OutMessage): void;
+}
+
+export interface TrackLike {
+  stop(): void;
+}
+
+export interface FrameLike {
+  /** Capture timestamp in MICROseconds (WebCodecs convention), if known. */
+  timestamp?: number | null;
+  close(): void;
+}
+
+export interface ReaderLike {
+  read(): Promise<{ done: boolean; value?: FrameLike }>;
+  cancel(): void | Promise<void>;
+}
+
+export interface WorkerCoreDeps {
+  port: PortLike;
+  now(): number;
+  createLandmarker(cfg: LandmarkerConfig, delegate: 'GPU' | 'CPU'): Promise<WorkerLandmarker>;
+  makeReader(track: TrackLike): ReaderLike;
+  /** Whether MediaStreamTrackProcessor exists in this worker (transport pick). */
+  hasTrackProcessor?: boolean;
+}
+
+export function createWorkerCore(deps: WorkerCoreDeps): {
+  onMessage(message: InMessage, track?: TrackLike, frame?: FrameLike): void;
+} {
+  const clock = new MonotonicClock();
+  const gate = new LatestFrameGate<{ frame: FrameLike; tMs: number | null }>((item) => {
+    item.frame.close();
+  });
+
+  let landmarker: WorkerLandmarker | null = null;
+  let reader: ReaderLike | null = null;
+  let track: TrackLike | null = null;
+  let failed = false;
+  let detached = false;
+
+  const detachInternals = (): void => {
+    detached = true;
+    void reader?.cancel();
+    reader = null;
+    track?.stop();
+    track = null;
+    gate.clear();
+  };
+
+  /** Returns false when processing must stop (error reported). */
+  const processOne = (item: { frame: FrameLike; tMs: number | null }): boolean => {
+    if (landmarker === null || failed) {
+      item.frame.close();
+      return false;
+    }
+    const tMs = clock.next(item.tMs ?? deps.now());
+    const t0 = deps.now();
+    let result: PoseResultLike;
+    try {
+      result = landmarker.detectForVideo(item.frame, tMs);
+    } catch (error) {
+      failed = true;
+      item.frame.close();
+      detachInternals();
+      deps.port.postMessage({ type: 'error', message: String(error) });
+      return false;
+    }
+    const inferenceMs = deps.now() - t0;
+    item.frame.close();
+    deps.port.postMessage({ type: 'result', tMs, inferenceMs, poses: convertPoseResult(result) });
+    return true;
+  };
+
+  const processChain = (first: { frame: FrameLike; tMs: number | null }): void => {
+    let item: { frame: FrameLike; tMs: number | null } | null = first;
+    while (item !== null) {
+      if (!processOne(item)) {
+        gate.clear();
+        return;
+      }
+      item = gate.done();
+    }
+  };
+
+  const runTrackLoop = async (r: ReaderLike): Promise<void> => {
+    for (;;) {
+      let step: { done: boolean; value?: FrameLike };
+      try {
+        step = await r.read();
+      } catch {
+        return;
+      }
+      if (step.done || detached || failed) return;
+      const value = step.value;
+      if (value === undefined) continue;
+      const tMs = typeof value.timestamp === 'number' ? value.timestamp / 1000 : null;
+      const toProcess = gate.offer({ frame: value, tMs });
+      if (toProcess !== null) processChain(toProcess);
+    }
+  };
+
+  const init = async (cfg: LandmarkerConfig): Promise<void> => {
+    let lastError: unknown;
+    const order: readonly ('GPU' | 'CPU')[] = cfg.delegateOrder ?? ['GPU', 'CPU'];
+    for (const delegate of order) {
+      try {
+        landmarker = await deps.createLandmarker(cfg, delegate);
+        deps.port.postMessage({
+          type: 'ready',
+          delegate,
+          hasMSTP: deps.hasTrackProcessor ?? false,
+        });
+        return;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    deps.port.postMessage({ type: 'init-error', message: String(lastError) });
+  };
+
+  return {
+    onMessage(message: InMessage, incomingTrack?: TrackLike, incomingFrame?: FrameLike): void {
+      switch (message.type) {
+        case 'init':
+          void init(message);
+          break;
+        case 'track':
+          if (incomingTrack === undefined) break;
+          detached = false;
+          failed = false;
+          track = incomingTrack;
+          reader = deps.makeReader(incomingTrack);
+          void runTrackLoop(reader);
+          break;
+        case 'frame': {
+          if (incomingFrame === undefined) break;
+          const toProcess = gate.offer({ frame: incomingFrame, tMs: message.tMs });
+          if (toProcess !== null) processChain(toProcess);
+          break;
+        }
+        case 'detach':
+          detachInternals();
+          break;
+        case 'close':
+          detachInternals();
+          landmarker?.close?.();
+          landmarker = null;
+          break;
+      }
+    },
+  };
+}
