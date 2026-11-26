@@ -693,6 +693,838 @@
           "durationS": 1.825
         }
       ]
+    },
+    "learn.word-look": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "learn.word-look.0.wav",
+          "text": "Look! A word!",
+          "durationS": 1.725
+        },
+        {
+          "file": "learn.word-look.1.wav",
+          "text": "Ooh — a word card!",
+          "durationS": 1.775
+        },
+        {
+          "file": "learn.word-look.2.wav",
+          "text": "A word appeared!",
+          "durationS": 1.7
+        }
+      ]
+    },
+    "learn.word-say": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "learn.word-say.0.wav",
+          "text": "It says…",
+          "durationS": 1.475
+        },
+        {
+          "file": "learn.word-say.1.wav",
+          "text": "This word says…",
+          "durationS": 1.725
+        },
+        {
+          "file": "learn.word-say.2.wav",
+          "text": "Can you read it? It says…",
+          "durationS": 2.075
+        }
+      ]
+    },
+    "learn.word-move": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "learn.word-move.0.wav",
+          "text": "Do what the word says!",
+          "durationS": 1.775
+        },
+        {
+          "file": "learn.word-move.1.wav",
+          "text": "The word tells you the move!",
+          "durationS": 2.05
+        },
+        {
+          "file": "learn.word-move.2.wav",
+          "text": "Now DO the word!",
+          "durationS": 1.675
+        }
+      ]
+    },
+    "learn.word-praise": {
+      "priority": 4,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "learn.word-praise.0.wav",
+          "text": "You read it AND did it!",
+          "durationS": 1.875
+        },
+        {
+          "file": "learn.word-praise.1.wav",
+          "text": "What a super reader!",
+          "durationS": 1.775
+        },
+        {
+          "file": "learn.word-praise.2.wav",
+          "text": "Amazing! You did the word!",
+          "durationS": 2.3
+        }
+      ]
+    },
+    "word.a": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.a.0.wav",
+          "text": "A!",
+          "durationS": 1.275
+        }
+      ]
+    },
+    "word.and": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.and.0.wav",
+          "text": "And!",
+          "durationS": 1.325
+        }
+      ]
+    },
+    "word.the": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.the.0.wav",
+          "text": "The!",
+          "durationS": 1.3
+        }
+      ]
+    },
+    "word.I": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.I.0.wav",
+          "text": "I!",
+          "durationS": 1.3
+        }
+      ]
+    },
+    "word.see": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.see.0.wav",
+          "text": "See!",
+          "durationS": 1.275
+        }
+      ]
+    },
+    "word.my": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.my.0.wav",
+          "text": "My!",
+          "durationS": 1.325
+        }
+      ]
+    },
+    "word.go": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.go.0.wav",
+          "text": "Go!",
+          "durationS": 1.3
+        }
+      ]
+    },
+    "word.to": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.to.0.wav",
+          "text": "To!",
+          "durationS": 1.325
+        }
+      ]
+    },
+    "word.in": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.in.0.wav",
+          "text": "In!",
+          "durationS": 1.25
+        }
+      ]
+    },
+    "word.up": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.up.0.wav",
+          "text": "Up!",
+          "durationS": 1.225
+        }
+      ]
+    },
+    "word.we": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.we.0.wav",
+          "text": "We!",
+          "durationS": 1.25
+        }
+      ]
+    },
+    "word.can": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.can.0.wav",
+          "text": "Can!",
+          "durationS": 1.35
+        }
+      ]
+    },
+    "word.big": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.big.0.wav",
+          "text": "Big!",
+          "durationS": 1.3
+        }
+      ]
+    },
+    "word.little": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.little.0.wav",
+          "text": "Little!",
+          "durationS": 1.425
+        }
+      ]
+    },
+    "word.red": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.red.0.wav",
+          "text": "Red!",
+          "durationS": 1.3
+        }
+      ]
+    },
+    "word.blue": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.blue.0.wav",
+          "text": "Blue!",
+          "durationS": 1.35
+        }
+      ]
+    },
+    "word.you": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.you.0.wav",
+          "text": "You!",
+          "durationS": 1.275
+        }
+      ]
+    },
+    "word.come": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.come.0.wav",
+          "text": "Come!",
+          "durationS": 1.3
+        }
+      ]
+    },
+    "word.here": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.here.0.wav",
+          "text": "Here!",
+          "durationS": 1.3
+        }
+      ]
+    },
+    "word.help": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.help.0.wav",
+          "text": "Help!",
+          "durationS": 1.3
+        }
+      ]
+    },
+    "word.jump": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.jump.0.wav",
+          "text": "Jump!",
+          "durationS": 1.325
+        }
+      ]
+    },
+    "word.run": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.run.0.wav",
+          "text": "Run!",
+          "durationS": 1.275
+        }
+      ]
+    },
+    "word.down": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.down.0.wav",
+          "text": "Down!",
+          "durationS": 1.375
+        }
+      ]
+    },
+    "word.look": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.look.0.wav",
+          "text": "Look!",
+          "durationS": 1.25
+        }
+      ]
+    },
+    "word.play": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.play.0.wav",
+          "text": "Play!",
+          "durationS": 1.3
+        }
+      ]
+    },
+    "word.said": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.said.0.wav",
+          "text": "Said!",
+          "durationS": 1.275
+        }
+      ]
+    },
+    "word.stop": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.stop.0.wav",
+          "text": "Stop!",
+          "durationS": 1.375
+        }
+      ]
+    },
+    "word.yes": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.yes.0.wav",
+          "text": "Yes!",
+          "durationS": 1.35
+        }
+      ]
+    },
+    "word.no": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.no.0.wav",
+          "text": "No!",
+          "durationS": 1.3
+        }
+      ]
+    },
+    "word.me": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.me.0.wav",
+          "text": "Me!",
+          "durationS": 1.25
+        }
+      ]
+    },
+    "word.all": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.all.0.wav",
+          "text": "All!",
+          "durationS": 1.325
+        }
+      ]
+    },
+    "word.out": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.out.0.wav",
+          "text": "Out!",
+          "durationS": 1.325
+        }
+      ]
+    },
+    "word.she": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.she.0.wav",
+          "text": "She!",
+          "durationS": 1.275
+        }
+      ]
+    },
+    "word.he": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.he.0.wav",
+          "text": "He!",
+          "durationS": 1.25
+        }
+      ]
+    },
+    "word.like": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.like.0.wav",
+          "text": "Like!",
+          "durationS": 1.325
+        }
+      ]
+    },
+    "word.this": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.this.0.wav",
+          "text": "This!",
+          "durationS": 1.35
+        }
+      ]
+    },
+    "word.what": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.what.0.wav",
+          "text": "What!",
+          "durationS": 1.25
+        }
+      ]
+    },
+    "word.was": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.was.0.wav",
+          "text": "Was!",
+          "durationS": 1.375
+        }
+      ]
+    },
+    "word.they": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.they.0.wav",
+          "text": "They!",
+          "durationS": 1.3
+        }
+      ]
+    },
+    "word.have": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.have.0.wav",
+          "text": "Have!",
+          "durationS": 1.3
+        }
+      ]
+    },
+    "word.when": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.when.0.wav",
+          "text": "When!",
+          "durationS": 1.275
+        }
+      ]
+    },
+    "word.from": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.from.0.wav",
+          "text": "From!",
+          "durationS": 1.35
+        }
+      ]
+    },
+    "word.of": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.of.0.wav",
+          "text": "Of!",
+          "durationS": 1.3
+        }
+      ]
+    },
+    "word.going": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.going.0.wav",
+          "text": "Going!",
+          "durationS": 1.4
+        }
+      ]
+    },
+    "word.walk": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.walk.0.wav",
+          "text": "Walk!",
+          "durationS": 1.275
+        }
+      ]
+    },
+    "word.again": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.again.0.wav",
+          "text": "Again!",
+          "durationS": 1.4
+        }
+      ]
+    },
+    "word.know": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.know.0.wav",
+          "text": "Know!",
+          "durationS": 1.3
+        }
+      ]
+    },
+    "word.let": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.let.0.wav",
+          "text": "Let!",
+          "durationS": 1.25
+        }
+      ]
+    },
+    "word.may": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.may.0.wav",
+          "text": "May!",
+          "durationS": 1.275
+        }
+      ]
+    },
+    "word.open": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.open.0.wav",
+          "text": "Open!",
+          "durationS": 1.425
+        }
+      ]
+    },
+    "word.think": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.think.0.wav",
+          "text": "Think!",
+          "durationS": 1.3
+        }
+      ]
+    },
+    "word.were": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.were.0.wav",
+          "text": "Were!",
+          "durationS": 1.275
+        }
+      ]
+    },
+    "word.because": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.because.0.wav",
+          "text": "Because!",
+          "durationS": 1.475
+        }
+      ]
+    },
+    "word.before": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.before.0.wav",
+          "text": "Before!",
+          "durationS": 1.4
+        }
+      ]
+    },
+    "word.which": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.which.0.wav",
+          "text": "Which!",
+          "durationS": 1.3
+        }
+      ]
+    },
+    "word.every": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.every.0.wav",
+          "text": "Every!",
+          "durationS": 1.375
+        }
+      ]
+    },
+    "word.always": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.always.0.wav",
+          "text": "Always!",
+          "durationS": 1.5
+        }
+      ]
+    },
+    "word.around": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.around.0.wav",
+          "text": "Around!",
+          "durationS": 1.475
+        }
+      ]
+    },
+    "word.first": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.first.0.wav",
+          "text": "First!",
+          "durationS": 1.35
+        }
+      ]
+    },
+    "word.found": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.found.0.wav",
+          "text": "Found!",
+          "durationS": 1.4
+        }
+      ]
+    },
+    "word.gave": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.gave.0.wav",
+          "text": "Gave!",
+          "durationS": 1.4
+        }
+      ]
+    },
+    "word.right": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.right.0.wav",
+          "text": "Right!",
+          "durationS": 1.325
+        }
+      ]
+    },
+    "word.sleep": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.sleep.0.wav",
+          "text": "Sleep!",
+          "durationS": 1.375
+        }
+      ]
+    },
+    "word.write": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.write.0.wav",
+          "text": "Write!",
+          "durationS": 1.325
+        }
+      ]
+    },
+    "word.would": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.would.0.wav",
+          "text": "Would!",
+          "durationS": 1.275
+        }
+      ]
+    },
+    "word.their": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.their.0.wav",
+          "text": "Their!",
+          "durationS": 1.275
+        }
+      ]
+    },
+    "word.upon": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.upon.0.wav",
+          "text": "Upon!",
+          "durationS": 1.475
+        }
+      ]
+    },
+    "word.these": {
+      "priority": 3,
+      "cooldownS": 0,
+      "wordings": [
+        {
+          "file": "word.these.0.wav",
+          "text": "These!",
+          "durationS": 1.425
+        }
+      ]
     }
   }
 }

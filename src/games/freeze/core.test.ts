@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { FreezeCore, type FreezeCoreConfig, type FreezeDirective } from './core';
 import {
+  FREEZE_WORD_ACTION_WINDOW_S,
+  FREEZE_WORD_LOOK_AT_S,
+  FREEZE_WORD_REVEAL_AT_S,
+  FREEZE_WORD_STOP_EXTRA_S,
   FREEZE_DANCE_CHEER_EVERY_S,
   FREEZE_METER_FILL_S,
   FREEZE_MUSIC_GAP_S,
@@ -254,5 +258,99 @@ describe('FreezeCore (M1.9)', () => {
     expect(d.finish()?.perPlayer[0]?.stars).toBe(0);
     // The buddy giggles about it rather than buzzing.
     expect(d.byType('say').some((s) => s.lineId === 'freeze.wobble')).toBe(true);
+  });
+});
+
+describe('Word Freeze (L1 learning layer)', () => {
+  const WORD_STOP = INTRO + 3 * L_DANCE + 2 * STOP_LEN; // 3rd stop (index 2)
+  const words = [
+    { word: 'go', action: 'go' as const },
+    { word: 'the' },
+    { word: 'up', action: 'up' as const },
+  ];
+
+  it('turns every Nth stop into a word stop: card, look line, then the reveal', () => {
+    const d = drive({ freezes: 3, words });
+    d.core.onMoving(0, 0.6);
+    d.runTo(WORD_STOP + FREEZE_WORD_LOOK_AT_S + 0.2);
+    const cards = d.byType('word-card');
+    expect(cards).toHaveLength(1);
+    expect(cards[0]).toMatchObject({ word: 'go', action: 'go' });
+    expect(d.byType('say').some((s) => s.lineId === 'learn.word-look')).toBe(true);
+    // The reveal comes after the reading beat, not with the card.
+    expect(d.byType('say').some((s) => s.lineId === 'word.go')).toBe(false);
+    d.runTo(WORD_STOP + FREEZE_WORD_REVEAL_AT_S + 0.2);
+    const says = d.byType('say').map((s) => s.lineId);
+    expect(says).toContain('learn.word-say');
+    expect(says).toContain('word.go');
+  });
+
+  it('word stops run longer than plain stops', () => {
+    const d = drive({ freezes: 3, words });
+    d.core.onMoving(0, 0.6);
+    // End of the extended word stop: music must come back EXTRA later.
+    d.runTo(WORD_STOP + STOP_LEN + FREEZE_WORD_STOP_EXTRA_S - 0.2);
+    expect(d.byType('finish')).toHaveLength(0);
+    d.runTo(WORD_STOP + STOP_LEN + FREEZE_WORD_STOP_EXTRA_S + 0.5);
+    expect(d.byType('finish')).toHaveLength(1); // freezes: 3 ends on this stop
+  });
+
+  it('an action word cues the move and ANY kid doing it earns the praise', () => {
+    const d = drive({ freezes: 4, words });
+    d.core.onMoving(0, 0.6);
+    const danceStart = WORD_STOP + STOP_LEN + FREEZE_WORD_STOP_EXTRA_S;
+    d.runTo(danceStart + 0.2);
+    expect(d.byType('say').some((s) => s.lineId === 'learn.word-move')).toBe(true);
+    d.core.onMoving(0, danceStart + 1); // the word said GO; the kid goes
+    d.runTo(danceStart + 2);
+    expect(d.byType('say').filter((s) => s.lineId === 'learn.word-praise')).toHaveLength(1);
+  });
+
+  it('UP words are satisfied by an arms-up event', () => {
+    const upFirst = [{ word: 'up', action: 'up' as const }];
+    const d = drive({ freezes: 4, words: upFirst });
+    d.core.onMoving(0, 0.6);
+    const danceStart = WORD_STOP + STOP_LEN + FREEZE_WORD_STOP_EXTRA_S;
+    d.runTo(danceStart + 0.2);
+    d.core.onArmsUp(0, danceStart + 1.5);
+    d.runTo(danceStart + 2.5);
+    expect(d.byType('say').some((s) => s.lineId === 'learn.word-praise')).toBe(true);
+  });
+
+  it('an unanswered action word expires silently (no shame)', () => {
+    const d = drive({ freezes: 4, words });
+    d.core.onMoving(0, 0.6);
+    const danceStart = WORD_STOP + STOP_LEN + FREEZE_WORD_STOP_EXTRA_S;
+    d.runTo(danceStart + FREEZE_WORD_ACTION_WINDOW_S + 1);
+    d.core.onMoving(0, danceStart + FREEZE_WORD_ACTION_WINDOW_S + 0.5); // too late
+    d.runTo(danceStart + FREEZE_WORD_ACTION_WINDOW_S + 2);
+    expect(d.byType('say').some((s) => s.lineId === 'learn.word-praise')).toBe(false);
+  });
+
+  it('without words every stop stays a plain stop (pure play untouched)', () => {
+    const d = drive({ freezes: 3 });
+    d.core.onMoving(0, 0.6);
+    d.runTo(INTRO + 3 * (L_DANCE + STOP_LEN) + 1);
+    expect(d.byType('word-card')).toHaveLength(0);
+    expect(d.byType('say').some((s) => s.lineId.startsWith('learn.'))).toBe(false);
+  });
+
+  it('a word stop takes the card slot: no pose card on the same stop', () => {
+    // Big mode: pose cards land on stops 1 and 3 (index % 2 === 1); words on
+    // index 2. With both on, stop index 1 keeps its pose card, index 2 is a
+    // word, and they never collide.
+    const d = drive({
+      players: [
+        { mode: 'big', active: true },
+        { mode: 'big', active: false },
+      ],
+      freezes: 4,
+      words,
+    });
+    d.core.onMoving(0, 0.6);
+    const bWordStop = INTRO + 3 * B_DANCE + 2 * STOP_LEN;
+    d.runTo(bWordStop + FREEZE_WORD_REVEAL_AT_S + 0.5);
+    expect(d.byType('pose-card')).toHaveLength(1); // stop index 1 only
+    expect(d.byType('word-card')).toHaveLength(1); // stop index 2
   });
 });

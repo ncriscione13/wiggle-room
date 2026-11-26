@@ -18,6 +18,11 @@ import {
   FREEZE_SCORE_WOBBLE_PENALTY_PTS,
   FREEZE_STOP_S,
   FREEZE_WOBBLE_FORGIVE_S,
+  FREEZE_WORD_ACTION_WINDOW_S,
+  FREEZE_WORD_LOOK_AT_S,
+  FREEZE_WORD_REVEAL_AT_S,
+  FREEZE_WORD_STOP_EVERY_COUNT,
+  FREEZE_WORD_STOP_EXTRA_S,
   type Range,
 } from '../../motion/config';
 import type { AgeMode, RoundResult, Slot, TrackingState } from '../types';
@@ -38,7 +43,15 @@ export type FreezeDirective =
   | { type: 'star'; slot: Slot }
   | { type: 'snowstorm' }
   | { type: 'pose-card'; card: PoseCardId }
+  | { type: 'word-card'; word: string; action?: 'go' | 'up' }
   | { type: 'finish'; result: RoundResult };
+
+/** A learning word for the round (DESIGN "Learning layer", L1). */
+export interface FreezeWord {
+  word: string;
+  /** The move the word cues in the next dance; only detectable actions. */
+  action?: 'go' | 'up';
+}
 
 export interface FreezePlayerConfig {
   mode: AgeMode;
@@ -54,12 +67,15 @@ export interface FreezeCoreConfig {
   audioDelayS: number;
   introS: number;
   rng: () => number;
+  /** Learning words (L1 Word Freeze); absent/empty = pure play. Cycled in
+   * order, one per FREEZE_WORD_STOP_EVERY_COUNT stops. */
+  words?: FreezeWord[];
 }
 
 type Phase = 'intro' | 'dance' | 'stop' | 'done';
 
 interface QueuedInput {
-  kind: 'moving' | 'still';
+  kind: 'moving' | 'still' | 'armsUp';
   tS: number;
 }
 
@@ -105,6 +121,15 @@ export class FreezeCore {
   private stopIndex = -1;
   private signalS = 0;
   private nextCheerS = Infinity;
+  // Word Freeze (L1): the current word stop and its follow-through.
+  private wordIdx = 0;
+  private wordStop: FreezeWord | null = null;
+  private wordLookAtS = Infinity;
+  private wordRevealAtS = Infinity;
+  private wordLookDone = false;
+  private wordRevealDone = false;
+  private pendingAction: 'go' | 'up' | null = null;
+  private pendingActionUntilS = Infinity;
   private stopHasCard = false;
   private anySnowstorm = false;
   private started = false;
@@ -121,6 +146,11 @@ export class FreezeCore {
 
   onStill(slot: Slot, tS: number): void {
     this.queues[slot].push({ kind: 'still', tS });
+  }
+
+  /** Arms-up events feed the UP word's follow-through (L1 Word Freeze). */
+  onArmsUp(slot: Slot, tS: number): void {
+    this.queues[slot].push({ kind: 'armsUp', tS });
   }
 
   setTracking(slot: Slot, state: TrackingState): void {
@@ -179,6 +209,29 @@ export class FreezeCore {
     }
     if (this.phaseName === 'stop') this.checkWobbles(tS);
 
+    // Word stop beats (L1): card first (kids are frozen, eyes on screen),
+    // then the reveal after a beat to read it.
+    if (this.phaseName === 'stop' && this.wordStop !== null) {
+      if (!this.wordLookDone && tS >= this.wordLookAtS) {
+        this.wordLookDone = true;
+        this.out.push({
+          type: 'word-card',
+          word: this.wordStop.word,
+          ...(this.wordStop.action !== undefined ? { action: this.wordStop.action } : {}),
+        });
+        this.say('learn.word-look');
+      }
+      if (!this.wordRevealDone && tS >= this.wordRevealAtS) {
+        this.wordRevealDone = true;
+        this.say('learn.word-say');
+        this.say(`word.${this.wordStop.word}`);
+      }
+    }
+    // An unanswered action word quietly expires -- no shame, ever.
+    if (this.pendingAction !== null && tS > this.pendingActionUntilS) {
+      this.pendingAction = null;
+    }
+
     while (tS >= this.phaseEndS && this.phaseName !== 'done') {
       this.advancePhase(this.phaseEndS);
     }
@@ -219,6 +272,22 @@ export class FreezeCore {
   }
 
   private applyInput(slot: Slot, input: QueuedInput): void {
+    // Action-word follow-through (L1): the word cued a move; ANY active kid
+    // doing it earns the shared praise (co-op, like the snowstorm).
+    if (
+      this.pendingAction !== null &&
+      this.phaseName === 'dance' &&
+      this.cfg.players[slot].active &&
+      input.tS <= this.pendingActionUntilS &&
+      ((this.pendingAction === 'go' && input.kind === 'moving') ||
+        (this.pendingAction === 'up' && input.kind === 'armsUp'))
+    ) {
+      this.pendingAction = null;
+      this.say('learn.word-praise');
+      this.out.push({ type: 'sfx', id: 'chime' });
+    }
+    if (input.kind === 'armsUp') return; // never part of still/moving state
+
     const wasMoving = this.moving[slot];
     this.moving[slot] = input.kind === 'moving';
     if (this.phaseName !== 'stop' || !this.cfg.players[slot].active) return;
@@ -276,8 +345,16 @@ export class FreezeCore {
       // Start a dance segment.
       if (this.phaseName === 'stop') {
         this.out.push({ type: 'unfreeze' });
-        // Alternate the wording family so it never drones.
-        this.say(this.stopIndex % 2 === 0 ? 'freeze.unfreeze' : 'freeze.dance');
+        if (this.wordStop?.action !== undefined) {
+          // The word IS the next move: cue it instead of the plain line.
+          this.pendingAction = this.wordStop.action;
+          this.pendingActionUntilS = atS + FREEZE_WORD_ACTION_WINDOW_S;
+          this.say('learn.word-move');
+        } else {
+          // Alternate the wording family so it never drones.
+          this.say(this.stopIndex % 2 === 0 ? 'freeze.unfreeze' : 'freeze.dance');
+        }
+        this.wordStop = null;
       }
       this.phaseName = 'dance';
       for (const slot of SLOTS) this.meters[slot] = 0;
@@ -319,14 +396,31 @@ export class FreezeCore {
       // DESIGN Voice guide: Little mode gets a voiced "Freeze!"; Big mode
       // plays the harder game -- the music stop IS the cue.
       if (this.timingMode() === 'little') this.say('freeze.freeze');
+      // Word Freeze (L1): with words loaded, every Nth stop is a word stop
+      // (it takes the card slot; pose cards keep their other beats).
+      const words = this.cfg.words;
+      const wantWord =
+        words !== undefined &&
+        words.length > 0 &&
+        this.stopIndex % FREEZE_WORD_STOP_EVERY_COUNT === FREEZE_WORD_STOP_EVERY_COUNT - 1;
+      if (wantWord) {
+        this.wordStop = words[this.wordIdx % words.length] ?? null;
+        this.wordIdx += 1;
+        this.wordLookAtS = atS + FREEZE_WORD_LOOK_AT_S;
+        this.wordRevealAtS = atS + FREEZE_WORD_REVEAL_AT_S;
+        this.wordLookDone = false;
+        this.wordRevealDone = false;
+      }
       const bigPresent = this.activeSlots().some((s) => this.cfg.players[s].mode === 'big');
-      this.stopHasCard = bigPresent && this.stopIndex % FREEZE_POSE_CARD_EVERY_COUNT === 1;
+      this.stopHasCard =
+        !wantWord && bigPresent && this.stopIndex % FREEZE_POSE_CARD_EVERY_COUNT === 1;
       if (this.stopHasCard) {
         const card = POSE_CARDS[(this.stopIndex / FREEZE_POSE_CARD_EVERY_COUNT) | 0];
         this.out.push({ type: 'pose-card', card: card ?? 'star' });
         this.say('freeze.pose-card');
       }
-      this.phaseEndS = atS + pick(FREEZE_STOP_S, this.cfg.rng);
+      this.phaseEndS =
+        atS + pick(FREEZE_STOP_S, this.cfg.rng) + (wantWord ? FREEZE_WORD_STOP_EXTRA_S : 0);
       return;
     }
   }

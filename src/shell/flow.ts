@@ -12,6 +12,12 @@ import {
   SOLO_START_AFTER_EMPTY_S,
   STILL_LINE_FROM_WOBBLE_COEFF,
 } from '../motion/config';
+import {
+  DETECTABLE_WORD_ACTIONS,
+  gradeFromKnob,
+  loadSightWordPacks,
+  wordsForRound,
+} from '../learning/packs';
 import { KeyboardMotion } from '../motion/keyboard';
 import type { MotionSource } from '../motion/kit';
 import {
@@ -70,6 +76,7 @@ function settingsOverlay(
   settings: ParentSettings,
   apply: (s: ParentSettings) => void,
   timingCheck: ((onStatus: (text: string) => void) => Promise<unknown>) | null,
+  gradeEdit: { profiles: Profile[]; save: (profiles: Profile[]) => void } | null,
 ): void {
   if (root.querySelector('[data-testid="settings"]') !== null) return;
   const el = document.createElement('div');
@@ -121,6 +128,35 @@ function settingsOverlay(
   const music = slider('Music', settings.musicVol01, 'settings-music');
   const voiceVol = slider('Voice', settings.voiceVol01, 'settings-voice');
 
+  // Learning layer (L1): grade per kid (DESIGN "Learning layer"). Content
+  // axis only -- Little/Big stays the motion axis.
+  const gradeSelects: [Profile, HTMLSelectElement][] = [];
+  if (gradeEdit !== null) {
+    for (const [i, profile] of gradeEdit.profiles.entries()) {
+      const row = document.createElement('label');
+      row.textContent = `Player ${String(i + 1)} learning: `;
+      const select = document.createElement('select');
+      select.dataset['testid'] = `settings-grade-${String(i)}`;
+      select.style.cssText = `font-size: ${px(typography.bodyPx)};`;
+      for (const [label, value] of [
+        ['Off (just play)', 'off'],
+        ['Pre-K', 'prek'],
+        ['Kindergarten', 'k'],
+        ['Grade 1', 'g1'],
+        ['Grade 2+', 'g2'],
+      ] as const) {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        select.append(option);
+      }
+      select.value = profile.grade ?? 'off';
+      row.append(select);
+      el.append(row);
+      gradeSelects.push([profile, select]);
+    }
+  }
+
   if (timingCheck !== null) {
     const row = document.createElement('div');
     const button = document.createElement('button');
@@ -154,6 +190,12 @@ function settingsOverlay(
       voiceVol01: Number(voiceVol.value) / 100,
     };
     apply(next);
+    if (gradeEdit !== null && gradeSelects.length > 0) {
+      for (const [profile, gradeSelect] of gradeSelects) {
+        profile.grade = gradeSelect.value as Profile['grade'];
+      }
+      gradeEdit.save(gradeEdit.profiles);
+    }
     el.remove();
   });
   el.append(close);
@@ -212,7 +254,12 @@ export async function bootPlay(root: HTMLElement): Promise<void> {
         ? (onStatus: (text: string) => void): Promise<unknown> =>
             runTimingCheck(lm, audio, onStatus)
         : null;
-    settingsOverlay(root, settings, applySettings, timingCheck);
+    // Grade editing applies to saved profiles (live play); a NEW grade takes
+    // effect on the next session (words are chosen once per session).
+    settingsOverlay(root, settings, applySettings, timingCheck, {
+      profiles,
+      save: saveProfiles,
+    });
   };
   // Two doors, one gate: hold P (desktop) or press-and-hold the top-right
   // corner (phones have no P key).
@@ -417,9 +464,17 @@ export async function bootPlay(root: HTMLElement): Promise<void> {
   }, 500);
 
   const players = activeSlots.map((slot) => toPlayerInfo(profileForSlot(slot), slot));
+  // Learning layer (L1): the ?grade= knob overrides every kid for testing;
+  // otherwise each profile's own grade applies. Loaded once per session.
+  const gradeKnob = gradeFromKnob(search.get('grade'));
+  const grades = players.map((p) => gradeKnob ?? p.grade);
+  const packs = grades.some((g) => g !== undefined && g !== 'off')
+    ? await loadSightWordPacks()
+    : null;
+  const words = packs !== null ? wordsForRound(packs, grades, DETECTABLE_WORD_ACTIONS) : null;
   let round = 1;
   for (;;) {
-    const result = await playRound(root, players, motion, voice, audio, round);
+    const result = await playRound(root, players, motion, voice, audio, round, words);
     if (result === null) break; // scene failed to load
     if (sessionTimer.timeUp) break;
     const removeResults = resultsScreen(root, result, players);
@@ -455,6 +510,7 @@ function toPlayerInfo(profile: Profile, slot: Slot): PlayerInfo {
     mode: profile.mode,
     calibration:
       profile.calibration ?? defaultCalibration(profile.mode, DESK_BODY_LENGTH_IMAGE, Date.now()),
+    ...(profile.grade !== undefined ? { grade: profile.grade } : {}),
     ...(profile.name !== undefined ? { name: profile.name } : {}),
   };
 }
@@ -484,6 +540,7 @@ async function playRound(
   voice: NarratorHandle,
   audio: Awaited<ReturnType<typeof createAudioBus>>,
   round: number,
+  words: { word: string; action?: 'go' | 'up' }[] | null,
 ): Promise<RoundResult | null> {
   const search = new URLSearchParams(window.location.search);
   // The scene derives slow-mo from the round number (every 3rd round).
@@ -497,6 +554,7 @@ async function playRound(
     audio,
     theme,
     difficulty: () => 1,
+    ...(words !== null ? { learning: { words } } : {}),
     finish: (result) => {
       resolveResult(result);
     },

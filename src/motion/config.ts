@@ -349,6 +349,16 @@ export const FREEZE_METER_FILL_S = 8;
 export const FREEZE_WOBBLE_FORGIVE_S: PerAgeMode = { little: 0.6, big: 0.3 };
 /** Big mode: a pose card replaces a plain freeze every Nth stop. */
 export const FREEZE_POSE_CARD_EVERY_COUNT = 2;
+/** Learning layer (L1): with a grade on, every Nth stop is a WORD stop. */
+export const FREEZE_WORD_STOP_EVERY_COUNT = 3;
+/** Word stops run longer: time to look at and read the card. */
+export const FREEZE_WORD_STOP_EXTRA_S = 2;
+/** When the card appears after the stop starts (kids freeze first). */
+export const FREEZE_WORD_LOOK_AT_S = 1.0;
+/** When the narrator reveals the word (the kid gets a beat to read it). */
+export const FREEZE_WORD_REVEAL_AT_S = 2.8;
+/** Action words: how long into the next dance the follow-through counts. */
+export const FREEZE_WORD_ACTION_WINDOW_S = 6;
 /** The team-snowstorm flurry lasts this long into the next dance. */
 export const FREEZE_SNOWSTORM_BURST_S = 2;
 /** Big-mode scoring (points are unitless). */

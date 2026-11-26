@@ -6,6 +6,10 @@
 import type { ColorToken, Theme } from '../ui/theme';
 
 export type AgeMode = 'little' | 'big';
+
+/** Learning-content band (DESIGN "Learning layer"): a per-kid CONTENT axis,
+ * separate from Little/Big motion difficulty. 'off' = pure play (default). */
+export type GradeBand = 'off' | 'prek' | 'k' | 'g1' | 'g2';
 export type Slot = 0 | 1;
 
 export type MovementKind = 'stop-go' | 'run' | 'jump' | 'reach' | 'squat';
@@ -125,6 +129,8 @@ export interface PlayerInfo {
   color: ColorToken;
   name?: string;
   mode: AgeMode;
+  /** Learning band; absent = 'off' (pure play). */
+  grade?: GradeBand;
   calibration: Calibration;
 }
 
@@ -151,6 +157,12 @@ export interface GameContext {
   theme: Theme;
   /** Per-kid dynamic difficulty: 3 wins in a row -> up, 2 misses -> down. */
   difficulty(slot: Slot): DifficultyLevel;
+  /** Learning content for this round (DESIGN "Learning layer"); absent when
+   * every active kid's grade is off. Words come pre-filtered: action tags
+   * only for moves the current motion source can actually detect. */
+  learning?: {
+    words: { word: string; action?: 'go' | 'up' }[];
+  };
   /** A game calls this exactly once, when its round ends. */
   finish(result: RoundResult): void;
 }

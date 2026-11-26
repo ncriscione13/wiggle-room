@@ -41,6 +41,8 @@ interface TestHooks {
   meters: [number, number];
   stars: [number, number];
   done: boolean;
+  /** The word on the current word card (L1 Word Freeze), null between. */
+  word?: string | null;
 }
 
 declare global {
@@ -73,11 +75,13 @@ class FreezeScene extends Phaser.Scene {
   private snowing = false;
   private currentCard: PoseCardId | null = null;
   private readonly offs: (() => void)[] = [];
+  private wordText!: Phaser.GameObjects.Text;
   private readonly hooks: TestHooks = {
     phase: 'intro',
     meters: [0, 0],
     stars: [0, 0],
     done: false,
+    word: null,
   };
 
   constructor(ctx: GameContext, search: URLSearchParams) {
@@ -111,6 +115,8 @@ class FreezeScene extends Phaser.Scene {
       audioDelayS: ctx.audio.outputDelayS + MUSIC_FADE_S,
       introS,
       rng: rngPin !== null ? () => Math.min(1, Math.max(0, Number(rngPin))) : Math.random,
+      // Learning layer (L1): pre-filtered words from the shell, or pure play.
+      ...(ctx.learning !== undefined ? { words: ctx.learning.words } : {}),
     });
   }
 
@@ -135,6 +141,15 @@ class FreezeScene extends Phaser.Scene {
         color: colors.textSoft,
       })
       .setOrigin(0.5, 0);
+    // Word Freeze card text: big enough to read from the couch.
+    this.wordText = this.add
+      .text(STAGE_W / 2, STAGE_H * 0.3, '', {
+        fontFamily: typography.family,
+        fontSize: '112px',
+        fontStyle: 'bold',
+        color: colors.butter,
+      })
+      .setOrigin(0.5);
 
     // Snow pool (spawned gently during stops; no flashing, slow drift).
     for (let i = 0; i < 40; i += 1) {
@@ -150,6 +165,10 @@ class FreezeScene extends Phaser.Scene {
       }),
       this.ctx.motion.on('still', (e) => {
         this.core.onStill(e.slot, e.tS);
+      }),
+      // Word Freeze: the UP word's follow-through (L1).
+      this.ctx.motion.on('armsUp', (e) => {
+        this.core.onArmsUp(e.slot, e.tS);
       }),
     );
     // Phaser never calls a custom destroy(); hook the scene lifecycle so
@@ -202,6 +221,8 @@ class FreezeScene extends Phaser.Scene {
         this.currentCard = null;
         this.cardText.setText('');
         this.cardGfx.clear();
+        this.wordText.setText('');
+        this.hooks.word = null;
         for (const r of this.reactions) r.clearStatue();
         break;
       case 'star': {
@@ -239,6 +260,10 @@ class FreezeScene extends Phaser.Scene {
       case 'pose-card':
         this.currentCard = d.card;
         this.drawPoseCard(d.card);
+        break;
+      case 'word-card':
+        this.drawWordCard(d.word);
+        this.hooks.word = d.word;
         break;
       case 'finish':
         this.hooks.done = true;
@@ -309,6 +334,22 @@ class FreezeScene extends Phaser.Scene {
         this.core.setPoseMatched(slot, true);
       }
     }
+  }
+
+  /** L1 Word Freeze: a big friendly card with the word, center-high so a
+   * frozen kid reads it without moving (that's the point). */
+  private drawWordCard(word: string): void {
+    const g = this.cardGfx;
+    g.clear();
+    const w = Math.max(380, 150 + word.length * 62);
+    const h = 200;
+    const x = (STAGE_W - w) / 2;
+    const y = STAGE_H * 0.3 - h / 2;
+    g.fillStyle(phaserColor(colors.surfaceRaised), 0.96);
+    g.fillRoundedRect(x, y, w, h, 28);
+    g.lineStyle(8, phaserColor(colors.butter), 1);
+    g.strokeRoundedRect(x, y, w, h, 28);
+    this.wordText.setText(word);
   }
 
   private drawPoseCard(card: PoseCardId): void {

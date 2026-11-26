@@ -6,6 +6,12 @@
 
 import Phaser from 'phaser';
 import { createAudioBus } from '../audio/bus';
+import {
+  DETECTABLE_WORD_ACTIONS,
+  gradeFromKnob,
+  loadSightWordPacks,
+  wordsForRound,
+} from '../learning/packs';
 import { KeyboardMotion } from '../motion/keyboard';
 import { createNarrator } from '../voice/narrator';
 import { cssRgb, colors, playerColors, theme, typography, px } from '../ui/theme';
@@ -20,12 +26,14 @@ const DESK_BODY_LENGTH_IMAGE = 0.2;
 function parsePlayers(search: URLSearchParams): PlayerInfo[] {
   const slots: Slot[] = search.get('players') === '2' ? [0, 1] : [0];
   const modes = (search.get('mode') ?? 'little').split(',');
+  const grade = gradeFromKnob(search.get('grade'));
   return slots.map((slot) => {
     const mode: AgeMode = modes[slot] === 'big' ? 'big' : 'little';
     return {
       slot,
       color: playerColors[slot],
       mode,
+      ...(grade !== undefined ? { grade } : {}),
       calibration: defaultCalibration(mode, DESK_BODY_LENGTH_IMAGE, Date.now()),
     };
   });
@@ -109,12 +117,26 @@ export async function bootGame(root: HTMLElement, gameId: string): Promise<void>
     caption.style.display = text === null ? 'none' : 'block';
   });
 
+  // Learning layer (L1): only loaded when a grade is on for someone.
+  const packs = players.some((p) => p.grade !== undefined && p.grade !== 'off')
+    ? await loadSightWordPacks()
+    : null;
+  const words =
+    packs !== null
+      ? wordsForRound(
+          packs,
+          players.map((p) => p.grade),
+          DETECTABLE_WORD_ACTIONS,
+        )
+      : null;
+
   const ctx: GameContext = {
     players,
     motion,
     voice,
     audio,
     theme,
+    ...(words !== null ? { learning: { words } } : {}),
     // Dynamic difficulty wires up when games report wins/misses (M2).
     difficulty: () => 1,
     finish: (result) => {

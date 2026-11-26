@@ -1,7 +1,7 @@
 // Player profiles (M1.5; DESIGN "App shell"): nickname, color, age mode and
 // warm-up calibration per kid -- saved on the device, never anywhere else.
 
-import type { AgeMode, Calibration } from '../games/types';
+import type { AgeMode, Calibration, GradeBand } from '../games/types';
 import type { ColorToken } from '../ui/theme';
 import { WARMUP_DEFAULT_CALIBRATION_TABLE } from '../motion/config';
 import { browserStore, type KeyValueStore } from './storage';
@@ -11,6 +11,8 @@ export interface Profile {
   name?: string;
   color: ColorToken;
   mode: AgeMode;
+  /** Learning band (DESIGN "Learning layer"); absent = off (pure play). */
+  grade?: GradeBand;
   calibration: Calibration | null;
 }
 

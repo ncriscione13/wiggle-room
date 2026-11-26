@@ -11,12 +11,30 @@ const csv = readFileSync(new URL('../../voice/lines.en.csv', import.meta.url), '
 describe('voice/lines.en.csv (M1.6)', () => {
   const lines = parseLinesCsv(csv);
 
-  it('parses with unique ids and 3-5 wordings each', () => {
+  it('parses with unique ids; narration has 3-5 wordings, word CONTENT exactly 1', () => {
     expect(lines.size).toBeGreaterThanOrEqual(30);
     for (const [id, def] of lines) {
-      expect(def.wordings.length, id).toBeGreaterThanOrEqual(3);
-      expect(def.wordings.length, id).toBeLessThanOrEqual(5);
-      for (const w of def.wordings) expect(w.trim().length, id).toBeGreaterThan(2);
+      if (id.startsWith('word.')) {
+        // L1 sight words: a word must sound the SAME every time (that's how
+        // sight-word learning works) -- one canonical reading, by design.
+        expect(def.wordings.length, id).toBe(1);
+        expect(def.wordings[0]?.trim().length, id).toBeGreaterThan(1);
+      } else {
+        expect(def.wordings.length, id).toBeGreaterThanOrEqual(3);
+        expect(def.wordings.length, id).toBeLessThanOrEqual(5);
+        for (const w of def.wordings) expect(w.trim().length, id).toBeGreaterThan(2);
+      }
+    }
+  });
+
+  it('every pack word has its clip line (word.<word>)', () => {
+    const packs = JSON.parse(
+      readFileSync(new URL('../../public/learning/sight-words.json', import.meta.url), 'utf8'),
+    ) as Record<string, { word: string }[]>;
+    for (const band of ['prek', 'k', 'g1', 'g2']) {
+      for (const { word } of packs[band] ?? []) {
+        expect(lines.has(`word.${word}`), `word.${word}`).toBe(true);
+      }
     }
   });
 

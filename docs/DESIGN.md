@@ -359,6 +359,36 @@ Adds reaching, stretching and squatting; a 3-year-old can play with no instructi
 - Fun hooks: pops play "Twinkle, Twinkle, Little Star" (public domain) note by note; five quick pops → rainbow burst; golden bubble showers mini-bubbles.
 - Detection: hand and foot positions, jump and squat. A touch counts inside the bubble plus a margin (full hand-width Little, half Big), checked along the hand's path between frames.
 
+## Learning layer (added 2026-11-26, Nick's direction)
+
+Movement-first learning, the GoNoodle model: the research on physically
+active academic lessons shows moderate retention gains and better on-task
+behavior, so the content rides the moves — never a quiz that stops the fun.
+
+- **Grade selector per profile** in parent settings: Off (default) / Pre-K /
+  K / Grade 1 / Grade 2+. Separate axis from Little/Big: age mode tunes the
+  MOTION difficulty, grade tunes the CONTENT. Two kids can play the same
+  round on different grades.
+- **Content packs** are offline JSON (`public/learning/`) plus pre-rendered
+  word clips — same no-network rule as everything else. Sight words use the
+  Dolch lists (what school sight-word lists are built from).
+- **Surface 1 — Word Freeze (Freeze Dance, ships first):** when a kid's grade
+  is on, every few stops becomes a word stop: a big word card appears during
+  the freeze, the narrator gives a beat to read it, then confirms it ("It
+  says… GO!"). ACTION words are the magic: the word tells you the next move
+  ("GO" = dance when the music returns, "UP" = arms up; JUMP/RUN/DOWN join
+  when M2's detectors land). Reading is the controller.
+- **Surface 2 — Jump Math (Critter Dash, M2):** "Jump 2 + 1 times!" —
+  answer by jumping, Pre-K counting through Grade 2 sums.
+- **Surface 3 — Catch (new game, after M3's touch tech):** letters, numbers
+  and words drift down; catch the right ones ("Catch the word THE!").
+  Items spawn inside each kid's measured reach. Two kids spell words
+  together ("Catch C… A… T!"). This absorbs the roadmap's "Snow Catcher"
+  and is the learning flagship. Wrong catches boing and giggle — never
+  punish; explanatory feedback names what was caught.
+- Bubble Pop keeps its existing learning rounds row and otherwise stays
+  pure play; each game keeps one clear promise.
+
 ## App shell and parent settings
 
 - Launcher: three big game cards; hold a hand over a card for 2 s (a ring fills) to start; "arms up" plays again. All games preload at startup (< 1 s to open).
@@ -397,7 +427,11 @@ A phase is done when its gate passes, not on a date. Each game's voice lines shi
 | M3 Bubble Pop   | Hand + foot pops; launcher; parent settings; session timer        | All 3 games from one launcher   |
 | M4 v1.0 release | Art + music pass; comfort review; README + GIF; public launch     | —                               |
 
-After v1.0: Animal Moves (copy the animal's pose), Snow Catcher, Simon Says.
+The learning layer ships in slices alongside the phases: L1 Word Freeze
+(after M1), L2 Jump Math (with M2), L3 the Catch game (after M3).
+
+After v1.0: Animal Moves (copy the animal's pose), Simon Says. (Snow Catcher
+grew up into the Catch learning game, L3.)
 
 ## Risks
 

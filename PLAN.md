@@ -141,6 +141,37 @@ Acceptance: `npm run check` and `npm run bench` green; zero swaps and zero false
 
 ---
 
+## Phase L1: Learning layer v1 — Word Freeze, sight words first (added 2026-11-26)
+
+Nick's direction: selectable grade-level learning; his son is on sight words.
+Design: DESIGN.md "Learning layer". Grade is a per-profile CONTENT axis
+(Off/Pre-K/K/G1/G2+), separate from Little/Big motion difficulty. All content
+offline (JSON packs + pre-rendered word clips).
+
+- [x] L1.1 Grade plumbing: profile `grade` field (default off) + per-slot
+      dropdowns in parent settings (validated load/save), `PlayerInfo.grade`,
+      `?grade=` test knob. Tests: settings/profile round-trips.
+- [x] L1.2 Sight-word packs + voice: `public/learning/sight-words.json`
+      (Dolch pre-primer/primer/first bands, action tags for GO/UP/JUMP/RUN/
+      DOWN), pack loader via the asset loader with field validation; word
+      clips + frame lines rendered with kokoro; ASSETS.md entry. Tests: pack
+      shape validation, loader fallback on corrupt pack.
+- [x] L1.3 FreezeCore Word Freeze: every Nth stop becomes a word stop when
+      any active kid's grade is on (word chosen from the lowest active band;
+      stop extended by a beat): card directive -> "look" line -> reveal line
+      with the word clip; ACTION words (GO = dance, UP = arms up; more with
+      M2 detectors) check the follow-through in the next dance and praise.
+      Tests: scheduling, reveal timing, action follow-through, grade-off
+      rounds unchanged.
+- [x] L1.4 Scene + flow: big word card rendering (theme type, no art
+      dependency), flow passes grades into GameContext, keyboard e2e: word
+      card appears, A (arms up) satisfies UP, captions mirror the lines.
+- [x] L1.5 `npm run check` green; fresh-eyes self-review against the
+      checklist; DECISIONS entry; report + what Nick's son should try.
+
+Gate: Nick's son reads at least 5 word cards out loud across a session and
+asks to keep playing (the M1 kid-gate bar, applied to words).
+
 ## Phase M2: Critter Dash
 
 - [ ] M2.1 Step detector (fires as the knee starts rising; arm pumps count in Little mode) and jump detector (fires at takeoff; cancelled if hips don't rise ~15% of body length). Clip tests: 5-jump clip → exactly 5 jumps; run clips → step rate within 10% of the real cadence.

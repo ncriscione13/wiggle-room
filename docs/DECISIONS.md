@@ -2,6 +2,37 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-26 — L1 Learning layer v1 — Word Freeze, sight words first
+
+Nick's direction ("selectable grade level learning… my son is working on sight words").
+Design added to DESIGN.md ("Learning layer"); plan added to PLAN.md (Phase L1). The
+research base (active academic lessons: moderate retention gains, better on-task
+behavior) is in KID-DESIGN.md.
+
+- **Grade is a per-profile CONTENT axis** (`GradeBand`: off/prek/k/g1/g2, default off),
+  edited in parent settings per kid — separate from Little/Big motion difficulty. A new
+  grade takes effect next session (words are chosen once per session). `?grade=` knob
+  overrides for testing.
+- **Sight-word packs** (`public/learning/sight-words.json`, Dolch bands) are validated
+  field by field; a corrupt/missing pack degrades to pure play, never a crash. A mixed
+  group plays the LOWEST active band (the youngest reader reads the shared card).
+  Precached by the existing PWA json glob — offline like everything else.
+- **Word Freeze**: with words loaded, every `FREEZE_WORD_STOP_EVERY_COUNT`(3)rd stop is
+  a word stop (it takes the card slot; Big-mode pose cards keep their other beats, no
+  collisions — pinned by test). Beats: freeze first, card + "Look! A word!" at 1.0 s,
+  reveal ("It says… GO!") at 2.8 s, stop extended 2 s for reading time. ACTION words
+  cue the next dance ("Do what the word says!"): GO = moving, UP = armsUp (the core
+  gained an armsUp input), ANY active kid's follow-through earns one shared praise
+  (co-op, like the snowstorm); unanswered words expire silently — no shame. JUMP/RUN/
+  DOWN tags exist in the packs and activate when M2's detectors land
+  (`DETECTABLE_WORD_ACTIONS` is the gate).
+- **Word clips have exactly ONE wording by design** — a sight word must sound the same
+  every time (that's the learning). The lines.csv integrity test now enforces 3–5
+  wordings for narration and exactly 1 for `word.*` content, and that every pack word
+  has its clip. 80 new kokoro clips (68 words + 4 frame lines).
+- Freeze scoring is UNTOUCHED by word stops: stars/grace/wobbles work exactly as
+  before; the learning rides along, it never gates.
+
 ## 2026-11-26 — Playtest round 3 — longer dances (researched), mid-dance cheers, solo = one circle
 
 Nick: "They need to be dancing for longer. And it needs to be more kid-friendly. Do some
