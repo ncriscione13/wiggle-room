@@ -18,6 +18,12 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${PORT}`,
     trace: 'retain-on-failure',
+    // Every fresh context used to install the PWA service worker and precache
+    // ~27 MB DURING the test -- on CI's 2 cores that stole enough CPU to fail
+    // the 60 fps guards as the clip library grew (playtest round 4). Nothing
+    // in the suite tests the SW itself (the manifest spec reads built files),
+    // so tests run without it; offline behavior stays a manual TV check.
+    serviceWorkers: 'block',
     launchOptions: {
       // Task 0.7: every camera-driven test runs against Chrome's fake camera,
       // with permission prompts auto-accepted.
