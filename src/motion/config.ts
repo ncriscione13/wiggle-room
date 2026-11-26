@@ -333,6 +333,14 @@ export const SOLO_START_AFTER_EMPTY_S = 10;
 export const REPLAY_RESTART_MAX_S = 3;
 /** Session timer heads-up before the cool-down. */
 export const SESSION_HEADSUP_S = 120;
+/** Default play-session length until a parent changes it (20 min). */
+export const SESSION_DEFAULT_LENGTH_S = 1200;
+/** Warm-up: per-move measuring window and the gap between moves. */
+export const WARMUP_MOVE_S = 4;
+export const WARMUP_MOVE_GAP_S = 1;
+/** Body length (fraction of image height) if even standing can't be
+ * measured -- roughly a kid at a sensible TV distance. */
+export const WARMUP_FALLBACK_BODY_LENGTH_IMAGE_RATIO = 0.17;
 /** Each session ends with a 1-minute cool-down stretch (DESIGN "Safety"). */
 export const COOLDOWN_STRETCH_S = 60;
 /** Round length targets (DESIGN.md age table). */

@@ -4,20 +4,8 @@ import { expect, test, type Page } from '@playwright/test';
 // stand-ins (CLAUDE.md rule 11). Slot 0 = ArrowLeft before Tab, slot 1 =
 // ArrowRight after Tab; releasing = freezing.
 
-interface Hooks {
-  phase: string;
-  meters: [number, number];
-  stars: [number, number];
-  done: boolean;
-}
-
-declare global {
-  interface Window {
-    __wiggle?: Hooks;
-  }
-}
-
-const hooks = (page: Page): Promise<Hooks | undefined> => page.evaluate(() => window.__wiggle);
+const hooks = (page: Page): Promise<WiggleHooks | undefined> =>
+  page.evaluate(() => window.__wiggle);
 
 test('two kids play a full round with keyboard stand-ins', async ({ page }) => {
   test.setTimeout(120_000);

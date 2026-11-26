@@ -83,6 +83,9 @@ class FreezeScene extends Phaser.Scene {
     );
     const introS = Math.min(GAME_INTRO_S, Math.max(0.5, Number(search.get('intro') ?? '') || 4));
     const round = Math.max(1, Number(search.get('round') ?? '') || 1);
+    // Test knob: ?rng=0 pins every random duration to its range minimum so
+    // e2e timelines are deterministic.
+    const rngPin = search.get('rng');
     this.core = new FreezeCore({
       players: [
         { mode: ctx.players[0]?.mode ?? 'little', active: ctx.players.some((p) => p.slot === 0) },
@@ -92,7 +95,7 @@ class FreezeScene extends Phaser.Scene {
       slowMo: round % FREEZE_SLOWMO_ROUND_INTERVAL_COUNT === 0,
       audioDelayS: ctx.audio.outputDelayS,
       introS,
-      rng: Math.random,
+      rng: rngPin !== null ? () => Math.min(1, Math.max(0, Number(rngPin))) : Math.random,
     });
   }
 

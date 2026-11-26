@@ -132,7 +132,7 @@ Goal: the first complete, fun, two-player game.
 
   Playwright test plays a full round with keyboard stand-ins for two players.
 
-- [ ] M1.10 Minimal shell:
+- [x] M1.10 Minimal shell:
   - Start screen → start-up check → warm-up (new kids only) → Freeze Dance → results → "arms up" to replay
   - Parent gate (hold P for 3 s) with session length and volumes
   - Session timer with a 2-minute heads-up and cool-down screen

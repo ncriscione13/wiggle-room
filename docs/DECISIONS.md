@@ -2,6 +2,26 @@
 
 Newest entries at the top. Each entry: date, task, what was decided, why.
 
+## 2026-11-26 — M1.10 — Minimal shell (flow, warm-up runner, session, gate)
+
+- **`/` keeps the debug stage; the kid flow lives at `?play=1`** behind the start
+  screen's big "Let's play!" button. Eight e2e specs pin the debug surface and it stays
+  the dev workhorse; the M3 launcher takes over `/` later.
+- **First live camera→game path**: `live-motion.ts` (camera at device-check size →
+  worker source → MotionKit) feeds the start-up check (per-kid circles + narrator
+  problem lines with their built-in 8 s cooldown), the guided warm-up, and the game.
+  Keyboard input (`?input=keyboard`) skips the camera screens — desk mode and e2e.
+- **Warm-up runner** (`WarmupFlow`): shared prompts, per-kid measurements; a move
+  retries when ANY active kid failed (max 2 tries → slow demo → age defaults for
+  whoever is still missing). bodyLengthImage falls back to the last seen pose, then a
+  sensible constant. Calibrations save to profiles; still lines apply to the kit.
+- **Session timer** is wall-clock from flow start (not play-time-only; pause semantics
+  would need a pause feature). A session shorter than the 2-min heads-up window says
+  the heads-up immediately — honest, affects only test knobs. Goodbye screen locks
+  until a parent holds P (settings) or reloads; parent gate runs the whole session.
+- **Round loop replays without reloading** (audio stays decoded; `?rng=0` pins random
+  durations for deterministic e2e). The M1.9 `?game=` route stays for single-game runs.
+
 ## 2026-11-26 — M1.9 — Freeze Dance (core, scene, route, keyboard e2e)
 
 - **The game is a pure directive machine** (`FreezeCore`): the scene drains typed

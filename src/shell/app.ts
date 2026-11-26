@@ -260,6 +260,18 @@ export async function bootApp(root: HTMLElement): Promise<void> {
     return;
   }
 
+  // The kid flow (M1.10): start-up check -> warm-up -> game -> session timer.
+  // `/` keeps the debug stage underneath until the M3 launcher replaces it.
+  if (new URLSearchParams(window.location.search).has('play')) {
+    try {
+      const { bootPlay } = await import('./flow');
+      await bootPlay(root);
+    } catch {
+      renderCameraErrorScreen(root, 'model');
+    }
+    return;
+  }
+
   // Direct game mount (M1.9): desk play + e2e. The guided flow is M1.10.
   const gameId = new URLSearchParams(window.location.search).get('game');
   if (gameId !== null) {

@@ -87,6 +87,20 @@ export function renderStartScreen(root: HTMLElement): void {
   hint.className = 'wr-hint';
   hint.textContent = 'No internet. No accounts. Nothing is recorded.';
 
-  main.append(circles, title, subtitle, hint);
+  // The kid flow (M1.10). `/` itself keeps the debug stage until the M3
+  // launcher; this is how families reach the game today.
+  const play = document.createElement('a');
+  play.className = 'wr-play';
+  play.dataset['testid'] = 'play-button';
+  play.href = '?play=1';
+  play.textContent = "Let's play!";
+  play.style.cssText = `
+    display: inline-block; margin-top: 18px; padding: 16px 44px;
+    border-radius: 24px; text-decoration: none;
+    font-size: ${px(typography.subtitlePx)};
+    color: ${colors.surfaceNight}; background: ${colors.mint};
+  `;
+
+  main.append(circles, title, subtitle, play, hint);
   root.replaceChildren(main);
 }
